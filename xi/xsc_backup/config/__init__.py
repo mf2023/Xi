@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright © 2026 Dunimd Team. All Rights Reserved.
+# Copyright © 2026 Wenze Wei. All Rights Reserved.
 #
 # This file is part of Xi.
 # The Xi project belongs to the Dunimd Team.
@@ -19,36 +19,23 @@
 # limitations under the License.
 
 """
-Xi - Unified Python Package
+Xi Configuration Module
 
-Xi is a flagship-grade LLM training and inference workstation
-built on the PiscesL1 architecture.
+Configuration schema and loaders for Xi Studio.
 """
 
-from .xsc import (
-    XiLogger,
-    XiLogLevel,
-    XiErrorCode,
-    XiErrorContext,
-    XiError,
-    XiCommand,
-    XiRunStatus,
-    XiGpuVendor,
-    XiGpuInfo,
-    XiRequest,
-    XiResponse,
-    XiRunInfo,
-    XiSystemStats,
-    XiLogEntry,
-    XiControlRequest,
-    XiControlResponse,
+from .schema import (
     XiConfig,
     XiProjectConfig,
+    XiProjectCommandsConfig,
     XiPathsConfig,
     XiApiConfig,
+    XiApiHandshakeConfig,
     XiUiConfig,
     XiNotificationConfig,
     XiEnvironmentConfig,
+    XiRequirementConfig,
+    XiVirtualenvConfig,
     XiCommandConfig,
     XiCommandSchema,
     XiParameterSchema,
@@ -57,42 +44,22 @@ from .xsc import (
     XiWidgetStyle,
     XiWidgetValidation,
     XiValueMapping,
-    XiConfigLoader,
-    XiSession,
-    XiSessionManager,
-    XiNotification,
-    XiNotificationManager,
-    XiExecutor,
-    XiServer,
 )
-
-__version__ = "0.1.0"
-__author__ = "Dunimd Team"
+from .loader import XiConfigLoader
+from .generator import XiConfigGenerator
 
 __all__ = [
-    "XiLogger",
-    "XiLogLevel",
-    "XiErrorCode",
-    "XiErrorContext",
-    "XiError",
-    "XiCommand",
-    "XiRunStatus",
-    "XiGpuVendor",
-    "XiGpuInfo",
-    "XiRequest",
-    "XiResponse",
-    "XiRunInfo",
-    "XiSystemStats",
-    "XiLogEntry",
-    "XiControlRequest",
-    "XiControlResponse",
     "XiConfig",
     "XiProjectConfig",
+    "XiProjectCommandsConfig",
     "XiPathsConfig",
     "XiApiConfig",
+    "XiApiHandshakeConfig",
     "XiUiConfig",
     "XiNotificationConfig",
     "XiEnvironmentConfig",
+    "XiRequirementConfig",
+    "XiVirtualenvConfig",
     "XiCommandConfig",
     "XiCommandSchema",
     "XiParameterSchema",
@@ -102,10 +69,5 @@ __all__ = [
     "XiWidgetValidation",
     "XiValueMapping",
     "XiConfigLoader",
-    "XiSession",
-    "XiSessionManager",
-    "XiNotification",
-    "XiNotificationManager",
-    "XiExecutor",
-    "XiServer",
+    "XiConfigGenerator",
 ]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright © 2026 Dunimd Team. All Rights Reserved.
+# Copyright © 2026 Wenze Wei. All Rights Reserved.
 #
 # This file is part of Xi.
 # The Xi project belongs to the Dunimd Team.
@@ -19,18 +19,19 @@
 # limitations under the License.
 
 """
-Xi - Unified Python Package
+Xi Core Module
 
-Xi is a flagship-grade LLM training and inference workstation
-built on the PiscesL1 architecture.
+Core utilities and types for Xi Studio.
 """
 
-from .xsc import (
+from .dc import (
     XiLogger,
     XiLogLevel,
     XiErrorCode,
     XiErrorContext,
     XiError,
+)
+from .types import (
     XiCommand,
     XiRunStatus,
     XiGpuVendor,
@@ -42,32 +43,7 @@ from .xsc import (
     XiLogEntry,
     XiControlRequest,
     XiControlResponse,
-    XiConfig,
-    XiProjectConfig,
-    XiPathsConfig,
-    XiApiConfig,
-    XiUiConfig,
-    XiNotificationConfig,
-    XiEnvironmentConfig,
-    XiCommandConfig,
-    XiCommandSchema,
-    XiParameterSchema,
-    XiTabSchema,
-    XiWidgetConfig,
-    XiWidgetStyle,
-    XiWidgetValidation,
-    XiValueMapping,
-    XiConfigLoader,
-    XiSession,
-    XiSessionManager,
-    XiNotification,
-    XiNotificationManager,
-    XiExecutor,
-    XiServer,
 )
-
-__version__ = "0.1.0"
-__author__ = "Dunimd Team"
 
 __all__ = [
     "XiLogger",
@@ -86,26 +62,4 @@ __all__ = [
     "XiLogEntry",
     "XiControlRequest",
     "XiControlResponse",
-    "XiConfig",
-    "XiProjectConfig",
-    "XiPathsConfig",
-    "XiApiConfig",
-    "XiUiConfig",
-    "XiNotificationConfig",
-    "XiEnvironmentConfig",
-    "XiCommandConfig",
-    "XiCommandSchema",
-    "XiParameterSchema",
-    "XiTabSchema",
-    "XiWidgetConfig",
-    "XiWidgetStyle",
-    "XiWidgetValidation",
-    "XiValueMapping",
-    "XiConfigLoader",
-    "XiSession",
-    "XiSessionManager",
-    "XiNotification",
-    "XiNotificationManager",
-    "XiExecutor",
-    "XiServer",
 ]

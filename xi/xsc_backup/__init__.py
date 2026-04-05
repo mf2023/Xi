@@ -19,13 +19,22 @@
 # limitations under the License.
 
 """
-Xi - Unified Python Package
+Xi Studio Backend - LLM one-stop workstation
 
 Xi is a flagship-grade LLM training and inference workstation
 built on the PiscesL1 architecture.
+
+Modules:
+    - core: Core utilities (dc, types)
+    - config: Configuration management
+    - session: Session and notification management
+    - executor: Command execution layer
+    - server: FastAPI server with routes
+    - launcher: Backend/frontend orchestration
+    - cli: Command-line interface
 """
 
-from .xsc import (
+from .core import (
     XiLogger,
     XiLogLevel,
     XiErrorCode,
@@ -42,6 +51,8 @@ from .xsc import (
     XiLogEntry,
     XiControlRequest,
     XiControlResponse,
+)
+from .config import (
     XiConfig,
     XiProjectConfig,
     XiPathsConfig,
@@ -58,15 +69,18 @@ from .xsc import (
     XiWidgetValidation,
     XiValueMapping,
     XiConfigLoader,
+)
+from .session import (
     XiSession,
     XiSessionManager,
     XiNotification,
     XiNotificationManager,
-    XiExecutor,
-    XiServer,
 )
+from .executor import XiExecutor
+from .server import XiServer
+from .launcher import XiLauncher
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "Dunimd Team"
 
 __all__ = [
@@ -108,4 +122,5 @@ __all__ = [
     "XiNotificationManager",
     "XiExecutor",
     "XiServer",
+    "XiLauncher",
 ]

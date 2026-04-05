@@ -34,10 +34,9 @@ import sys
 import argparse
 from pathlib import Path
 
-from .xsc.launcher import XiLauncher
+from .xsc.app import XiServer, main as app_main
 from .xsc.core.dc import XiLogger
 from .xsc.config import XiConfigLoader
-from .xsc.launcher.backend import start_backend, wait_for_backend
 from .xsc.launcher.frontend import start_frontend
 from .xsc.launcher.process import cleanup_processes
 
@@ -80,20 +79,108 @@ Examples:
     args = parser.parse_args()
 
     if not args.command:
-        launcher = XiLauncher(
-            xi_port=3140,
-            frontend_port=3000
-        )
-        exit_code = launcher.run()
-        sys.exit(exit_code)
+        # Default behavior: start both backend and frontend
+        import subprocess
+        import signal
+        import time
+        
+        root_dir = XiConfigLoader.find_project_root()
+        logger = XiLogger("Xi.Launcher", enable_file=True)
+        processes = []
+        
+        def signal_handler(signum, frame):
+            logger.info(
+                f"Received signal {signum}, initiating shutdown...",
+                event="xi.launcher.signal"
+            )
+            cleanup_processes(processes, 3140, 3000, logger)
+            sys.exit(0)
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        # Start backend
+        backend_cmd = [sys.executable, __file__, "backend", "--port", "3140"]
+        backend_proc = subprocess.Popen(backend_cmd, cwd=str(root_dir))
+        processes.append(backend_proc)
+        
+        # Wait a bit for backend to start
+        time.sleep(2)
+        
+        # Start frontend
+        frontend_cmd = [sys.executable, __file__, "frontend", "--frontend-port", "3000"]
+        frontend_proc = subprocess.Popen(frontend_cmd, cwd=str(root_dir))
+        processes.append(frontend_proc)
+        
+        print(f"\n{'='*60}")
+        print(f"  Xi Studio")
+        print(f"{'='*60}")
+        print(f"  Backend API:  http://127.0.0.1:3140")
+        print(f"  API Docs:     http://127.0.0.1:3140/docs")
+        print(f"  Frontend:     http://127.0.0.1:3000")
+        print(f"{'='*60}\n")
+        print("[INFO] Press Ctrl+C to stop Xi Studio\n")
+        
+        try:
+            for proc in processes:
+                proc.wait()
+        except KeyboardInterrupt:
+            print("\n[INFO] Shutting down Xi Studio...")
+        
+        cleanup_processes(processes, 3140, 3000, logger)
+        sys.exit(0)
 
     if args.command == "start":
-        launcher = XiLauncher(
-            xi_port=args.port,
-            frontend_port=args.frontend_port
-        )
-        exit_code = launcher.run()
-        sys.exit(exit_code)
+        # Start both backend and frontend
+        import subprocess
+        import signal
+        import time
+        
+        root_dir = XiConfigLoader.find_project_root()
+        logger = XiLogger("Xi.Launcher", enable_file=True)
+        processes = []
+        
+        def signal_handler(signum, frame):
+            logger.info(
+                f"Received signal {signum}, initiating shutdown...",
+                event="xi.launcher.signal"
+            )
+            cleanup_processes(processes, args.port, args.frontend_port, logger)
+            sys.exit(0)
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        # Start backend
+        backend_cmd = [sys.executable, __file__, "backend", "--port", str(args.port)]
+        backend_proc = subprocess.Popen(backend_cmd, cwd=str(root_dir))
+        processes.append(backend_proc)
+        
+        # Wait a bit for backend to start
+        time.sleep(2)
+        
+        # Start frontend
+        frontend_cmd = [sys.executable, __file__, "frontend", "--frontend-port", str(args.frontend_port)]
+        frontend_proc = subprocess.Popen(frontend_cmd, cwd=str(root_dir))
+        processes.append(frontend_proc)
+        
+        print(f"\n{'='*60}")
+        print(f"  Xi Studio")
+        print(f"{'='*60}")
+        print(f"  Backend API:  http://127.0.0.1:{args.port}")
+        print(f"  API Docs:     http://127.0.0.1:{args.port}/docs")
+        print(f"  Frontend:     http://127.0.0.1:{args.frontend_port}")
+        print(f"{'='*60}\n")
+        print("[INFO] Press Ctrl+C to stop Xi Studio\n")
+        
+        try:
+            for proc in processes:
+                proc.wait()
+        except KeyboardInterrupt:
+            print("\n[INFO] Shutting down Xi Studio...")
+        
+        cleanup_processes(processes, args.port, args.frontend_port, logger)
+        sys.exit(0)
     elif args.command == "backend":
         exit_code = _run_backend(args.port)
         sys.exit(exit_code)
@@ -126,14 +213,12 @@ def _run_backend(port: int) -> int:
     
     root_dir = XiConfigLoader.find_project_root()
     logger = XiLogger("Xi.Backend", enable_file=True)
-    processes = []
     
     def signal_handler(signum, frame):
         logger.info(
             f"Received signal {signum}, initiating shutdown...",
             event="xi.backend.signal"
         )
-        cleanup_processes(processes, port, None, logger)
         sys.exit(0)
     
     signal.signal(signal.SIGINT, signal_handler)
@@ -146,31 +231,20 @@ def _run_backend(port: int) -> int:
     print(f"  API Docs:     http://127.0.0.1:{port}/docs")
     print(f"{'='*60}\n")
     
-    backend_proc = start_backend(port, root_dir, logger, processes)
-    if not backend_proc:
-        cleanup_processes(processes, port, None, logger)
-        return 1
-    
-    if not wait_for_backend(port, logger=logger):
-        cleanup_processes(processes, port, None, logger)
-        return 1
-    
-    print("\n[INFO] Press Ctrl+C to stop Xi Backend\n")
-    
     try:
-        while True:
-            if backend_proc.poll() is not None:
-                logger.info(
-                    f"Backend process PID={backend_proc.pid} exited with code {backend_proc.returncode}",
-                    event="xi.backend.process_exit"
-                )
-                cleanup_processes(processes, port, None, logger)
-                return backend_proc.returncode or 0
-            time.sleep(0.5)
+        # Create and run the server
+        server = XiServer(port=port, root_dir=str(root_dir))
+        print("\n[INFO] Press Ctrl+C to stop Xi Backend\n")
+        server.run(host="127.0.0.1")
     except KeyboardInterrupt:
         print("\n[INFO] Shutting down Xi Backend...")
+    except Exception as e:
+        logger.error(
+            f"Backend failed to start: {e}",
+            event="xi.backend.error"
+        )
+        return 1
     
-    cleanup_processes(processes, port, None, logger)
     return 0
 
 

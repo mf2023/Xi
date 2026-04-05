@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright © 2026 Dunimd Team. All Rights Reserved.
+# Copyright © 2026 Wenze Wei. All Rights Reserved.
 #
 # This file is part of Xi.
 # The Xi project belongs to the Dunimd Team.
@@ -19,19 +19,9 @@
 # limitations under the License.
 
 """
-Xi Studio Backend - LLM one-stop workstation
+Xi Studio Core Module
 
-Xi is a flagship-grade LLM training and inference workstation
-built on the PiscesL1 architecture.
-
-Modules:
-    - core: Core utilities (dc, types)
-    - config: Configuration management
-    - session: Session and notification management
-    - executor: Command execution layer
-    - server: FastAPI server with routes
-    - launcher: Backend/frontend orchestration
-    - cli: Command-line interface
+Xi Studio is a one-stop workstation for large language models (LLMs).
 """
 
 from .core import (
@@ -52,14 +42,19 @@ from .core import (
     XiControlRequest,
     XiControlResponse,
 )
+
 from .config import (
     XiConfig,
     XiProjectConfig,
+    XiProjectCommandsConfig,
     XiPathsConfig,
     XiApiConfig,
+    XiApiHandshakeConfig,
     XiUiConfig,
     XiNotificationConfig,
     XiEnvironmentConfig,
+    XiRequirementConfig,
+    XiVirtualenvConfig,
     XiCommandConfig,
     XiCommandSchema,
     XiParameterSchema,
@@ -69,21 +64,26 @@ from .config import (
     XiWidgetValidation,
     XiValueMapping,
     XiConfigLoader,
+    XiConfigGenerator,
 )
-from .session import (
-    XiSession,
-    XiSessionManager,
-    XiNotification,
-    XiNotificationManager,
-)
-from .executor import XiExecutor
-from .server import XiServer
-from .launcher import XiLauncher
 
-__version__ = "1.0.0"
-__author__ = "Dunimd Team"
+from .executor import XiExecutor
+from .session import XiSession, XiSessionManager, XiNotification, XiNotificationManager
+from .app import XiServer, get_app, app, main
+from .service import TrainingManager, InferenceManager, ModelsManager, SystemManager
+from .api import (
+    setup_health_routes,
+    setup_runs_routes,
+    setup_inference_routes,
+    setup_models_routes,
+    setup_runs_websocket,
+    setup_monitor_websocket,
+)
+
+__version__ = "0.1.0"
 
 __all__ = [
+    # Core
     "XiLogger",
     "XiLogLevel",
     "XiErrorCode",
@@ -100,13 +100,19 @@ __all__ = [
     "XiLogEntry",
     "XiControlRequest",
     "XiControlResponse",
+    
+    # Config
     "XiConfig",
     "XiProjectConfig",
+    "XiProjectCommandsConfig",
     "XiPathsConfig",
     "XiApiConfig",
+    "XiApiHandshakeConfig",
     "XiUiConfig",
     "XiNotificationConfig",
     "XiEnvironmentConfig",
+    "XiRequirementConfig",
+    "XiVirtualenvConfig",
     "XiCommandConfig",
     "XiCommandSchema",
     "XiParameterSchema",
@@ -116,11 +122,37 @@ __all__ = [
     "XiWidgetValidation",
     "XiValueMapping",
     "XiConfigLoader",
+    "XiConfigGenerator",
+    
+    # Executor
+    "XiExecutor",
+    
+    # Session
     "XiSession",
     "XiSessionManager",
     "XiNotification",
     "XiNotificationManager",
-    "XiExecutor",
+    
+    # App
     "XiServer",
-    "XiLauncher",
+    "get_app",
+    "app",
+    "main",
+    
+    # Service
+    "TrainingManager",
+    "InferenceManager",
+    "ModelsManager",
+    "SystemManager",
+    
+    # API
+    "setup_health_routes",
+    "setup_runs_routes",
+    "setup_inference_routes",
+    "setup_models_routes",
+    "setup_runs_websocket",
+    "setup_monitor_websocket",
+    
+    # Version
+    "__version__",
 ]
