@@ -37,6 +37,7 @@ from .runs import XiRunsWebSocket
 from .monitor import XiMonitorWebSocket
 from .explorer import XiExplorerWebSocket
 from .welcome import XiWelcomeWebSocket
+from .status import XiStatusWebSocket
 
 
 class XiTrainingWebSocket:
@@ -728,3 +729,27 @@ def setup_websockets(
             except asyncio.CancelledError:
                 pass
             await welcome_handler.disconnect(websocket)
+
+    # Status WebSocket endpoint
+    status_handler = XiStatusWebSocket.get_instance(logger)
+    
+    @app.websocket("/ws/status")
+    async def status_websocket(websocket: WebSocket):
+        await status_handler.connect(websocket)
+
+        try:
+            async for raw_message in websocket.iter_text():
+                try:
+                    data = json.loads(raw_message)
+                    await status_handler.handle_message(websocket, data)
+                except json.JSONDecodeError:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": "Invalid JSON message"
+                    })
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            logger.error(f"Status WebSocket error: {e}", event="xi.status_ws.error")
+        finally:
+            status_handler.disconnect(websocket)

@@ -1,8 +1,8 @@
 /**
- * Copyright © 2025-2026 Wenze Wei. All Rights Reserved.
+ * Copyright © 2026 Wenze Wei. All Rights Reserved.
  *
- * This file is part of PiscesL1.
- * The PiscesL1 project belongs to the Dunimd Team.
+ * This file is part of Xi.
+ * The Xi project belongs to the Dunimd Team.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -15,21 +15,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * DISCLAIMER: Users must comply with applicable AI regulations.
- * Non-compliance may result in service termination or legal liability.
  */
 
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, X, Check, AlertCircle, Info, AlertTriangle, Calendar, Sun, Cloud } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { useNotifications } from "@/lib/stores/config-store";
-import type { NotificationType, XiNotification } from "@/types/config";
+import { Bell, Check, AlertCircle, Info, AlertTriangle, Calendar, Sun, Cloud, CheckCheck, Settings2, Wifi, Bluetooth, Volume2, ChevronDown, ChevronUp } from "lucide-react";
+import { useStatusStore } from "@/lib/stores/status-store";
+import type { StatusNotification } from "@/lib/api/status-ws";
 
-const getNotificationIcon = (type: NotificationType) => {
+const getNotificationIcon = (type: StatusNotification["type"]) => {
   switch (type) {
     case "success":
       return <Check className="h-4 w-4 text-green-500" />;
@@ -39,6 +34,19 @@ const getNotificationIcon = (type: NotificationType) => {
       return <AlertCircle className="h-4 w-4 text-red-500" />;
     default:
       return <Info className="h-4 w-4 text-blue-500" />;
+  }
+};
+
+const getIconClass = (type: StatusNotification["type"]) => {
+  switch (type) {
+    case "success":
+      return "notification-item__icon--success";
+    case "warning":
+      return "notification-item__icon--warning";
+    case "error":
+      return "notification-item__icon--error";
+    default:
+      return "notification-item__icon--info";
   }
 };
 
@@ -55,6 +63,25 @@ const formatTime = (timeStr: string) => {
   return date.toLocaleDateString();
 };
 
+interface ControlButtonProps {
+  icon: React.ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+}
+
+function ControlButton({ icon, active = false, onClick }: ControlButtonProps) {
+  return (
+    <button
+      className={`control-btn ${active ? 'control-btn--active' : ''}`}
+      onClick={onClick}
+    >
+      <div className="control-btn__icon">
+        {icon}
+      </div>
+    </button>
+  );
+}
+
 interface NotificationPopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -62,23 +89,29 @@ interface NotificationPopupProps {
 }
 
 export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPopupProps) {
-  const [position, setPosition] = useState({ right: 8, top: 48 });
+  const [isClosing, setIsClosing] = useState(false);
+  const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(true);
   const popupRef = useRef<HTMLDivElement>(null);
 
   const {
     notifications,
     unreadCount,
-    fetchNotifications,
-    markNotificationRead,
+    networkEnabled,
+    bluetooth,
+    muted,
+    setNetwork,
+    setBluetooth,
+    setMuted,
+    markRead,
     deleteNotification,
-    clearAllNotifications,
-  } = useNotifications();
+    clearNotifications,
+  } = useStatusStore();
 
   useEffect(() => {
     if (isOpen) {
-      fetchNotifications();
+      setIsClosing(false);
     }
-  }, [isOpen, fetchNotifications]);
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,7 +121,7 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
         anchorRef.current &&
         !anchorRef.current.contains(event.target as Node)
       ) {
-        onClose();
+        handleClose();
       }
     };
 
@@ -99,29 +132,27 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen, onClose, anchorRef]);
-
-  useEffect(() => {
-    if (isOpen && anchorRef.current) {
-      const rect = anchorRef.current.getBoundingClientRect();
-      setPosition({
-        right: window.innerWidth - rect.right,
-        top: rect.bottom + 4,
-      });
-    }
   }, [isOpen, anchorRef]);
 
-  const handleMarkAsRead = async (id: string) => {
-    await markNotificationRead(id);
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 200);
   };
 
-  const handleClearNotification = async (e: React.MouseEvent, id: string) => {
+  const handleMarkAsRead = (id: string) => {
+    markRead(id);
+  };
+
+  const handleClearNotification = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    await deleteNotification(id);
+    deleteNotification(id);
   };
 
-  const handleClearAll = async () => {
-    await clearAllNotifications();
+  const handleClearAll = () => {
+    clearNotifications();
   };
 
   if (!isOpen) return null;
@@ -129,84 +160,13 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
   return (
     <div
       ref={popupRef}
-      className="notification-popup acrylic shadow-2xl animate-fade-in overflow-hidden"
-      style={{
-        '--popup-right': `${position.right}px`,
-        '--popup-top': `${position.top}px`,
-      } as React.CSSProperties}
+      className={`notification-panel ${isClosing ? 'notification-panel--hidden' : ''}`}
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4" />
-          <span className="font-semibold text-sm">Notifications</span>
-          {unreadCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-              {unreadCount}
-            </span>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs"
-          onClick={handleClearAll}
-          disabled={notifications.length === 0}
-        >
-          Clear all
-        </Button>
-      </div>
-
-      <div className="max-h-80 overflow-y-auto">
-        {notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <Bell className="h-10 w-10 mb-2 opacity-50" />
-            <p className="text-sm">No notifications</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/50">
-            {notifications.map((notification: XiNotification) => (
-              <div
-                key={notification.id}
-                className={cn(
-                  "flex gap-3 p-3 transition-colors hover:bg-muted/50 cursor-pointer",
-                  !notification.read && "bg-primary/5"
-                )}
-                onClick={() => handleMarkAsRead(notification.id)}
-              >
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted">
-                  {getNotificationIcon(notification.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium truncate">{notification.title}</p>
-                    <button
-                      onClick={(e) => handleClearNotification(e, notification.id)}
-                      className="flex-shrink-0 p-1 rounded hover:bg-muted"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    {formatTime(notification.time)}
-                  </p>
-                </div>
-                {!notification.read && (
-                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-border/50 p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
+      <div className="notification-panel__box notification-panel__box--date acrylic">
+        <div className="notification-panel__date-bar">
+          <div className="notification-panel__date">
+            <Calendar className="h-4 w-4" />
+            <span>
               {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "long",
@@ -214,12 +174,103 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
               })}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Sun className="h-3 w-3" />
+          <div className="notification-panel__weather">
+            <Sun className="h-3.5 w-3.5" />
             <span>24°C</span>
-            <Cloud className="h-3 w-3 ml-1" />
+            <Cloud className="h-3.5 w-3.5" style={{ marginLeft: '4px' }} />
           </div>
         </div>
+      </div>
+
+      <div className="notification-panel__box notification-panel__box--controls acrylic">
+        <div className="notification-panel__header">
+          <div className="notification-panel__title">
+            <Settings2 className="h-4 w-4" />
+            <span className="notification-panel__title-text">Control Center</span>
+          </div>
+        </div>
+        <div className="notification-panel__controls-content">
+          <div className="control-grid">
+            <ControlButton
+              icon={<Wifi className="h-5 w-5" />}
+              active={networkEnabled}
+              onClick={() => setNetwork(!networkEnabled)}
+            />
+            <ControlButton
+              icon={<Bluetooth className="h-5 w-5" />}
+              active={bluetooth}
+              onClick={() => setBluetooth(!bluetooth)}
+            />
+            <ControlButton
+              icon={<Volume2 className="h-5 w-5" />}
+              active={!muted}
+              onClick={() => setMuted(!muted)}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className={`notification-panel__box notification-panel__box--notifications acrylic ${isNotificationsExpanded ? 'notification-panel__box--expanded' : 'notification-panel__box--collapsed'}`}>
+        <div className="notification-panel__header">
+          <div className="notification-panel__title">
+            <span className="notification-panel__title-text">Notifications</span>
+            {unreadCount > 0 && (
+              <span className="notification-panel__badge">{unreadCount}</span>
+            )}
+          </div>
+          <button
+            className="notification-panel__collapse-btn"
+            onClick={() => setIsNotificationsExpanded(!isNotificationsExpanded)}
+          >
+            {isNotificationsExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        {isNotificationsExpanded && (
+          <>
+            <div className="notification-panel__content">
+              {notifications.length === 0 ? (
+                <div className="notification-panel__empty">
+                  <Bell className="h-10 w-10 notification-panel__empty-icon" />
+                  <p className="notification-panel__empty-text">No notifications</p>
+                </div>
+              ) : (
+                notifications.map((notification: StatusNotification) => (
+                  <div
+                    key={notification.id}
+                    className={`notification-item ${!notification.read ? 'notification-item--unread' : ''}`}
+                    onClick={() => handleMarkAsRead(notification.id)}
+                  >
+                    <div className={`notification-item__icon ${getIconClass(notification.type)}`}>
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    <div className="notification-item__body">
+                      <p className="notification-item__title">{notification.title}</p>
+                      <p className="notification-item__message">{notification.message}</p>
+                      <p className="notification-item__time">{formatTime(notification.time)}</p>
+                    </div>
+                    {!notification.read && <div className="notification-item__dot" />}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="notification-panel__footer">
+              <button
+                className="notification-panel__clear-btn"
+                onClick={handleClearAll}
+                disabled={notifications.length === 0}
+              >
+                <CheckCheck className="h-4 w-4" />
+                <span>Clear all</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

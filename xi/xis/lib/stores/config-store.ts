@@ -23,14 +23,11 @@ import type {
   XiConfig,
   XiPathsConfig,
   XiCommandConfig,
-  XiNotification,
-  NotificationType,
 } from "@/types/config";
 import { apiClient } from "@/lib/api/client";
 
 interface ConfigState {
   config: XiConfig | null;
-  notifications: XiNotification[];
   isLoading: boolean;
   error: string | null;
   lastFetched: number | null;
@@ -39,17 +36,6 @@ interface ConfigState {
   fetchPaths: () => Promise<XiPathsConfig | null>;
   fetchCommands: () => Promise<Record<string, XiCommandConfig> | null>;
   fetchCommand: (name: string) => Promise<XiCommandConfig | null>;
-
-  fetchNotifications: () => Promise<void>;
-  createNotification: (
-    type: NotificationType,
-    title: string,
-    message: string,
-    metadata?: Record<string, unknown>
-  ) => Promise<XiNotification | null>;
-  markNotificationRead: (id: string) => Promise<boolean>;
-  deleteNotification: (id: string) => Promise<boolean>;
-  clearAllNotifications: () => Promise<boolean>;
 
   setTheme: (theme: "light" | "dark" | "system") => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
@@ -66,7 +52,6 @@ export const useConfigStore = create<ConfigState>()(
   persist(
     (set, get) => ({
       config: null,
-      notifications: [],
       isLoading: false,
       error: null,
       lastFetched: null,
@@ -188,131 +173,6 @@ export const useConfigStore = create<ConfigState>()(
         }
       },
 
-      fetchNotifications: async () => {
-        try {
-          const response = await fetch(
-            `${getApiBaseUrl()}/v1/notifications`,
-            {
-              headers: {
-                Authorization: `Bearer ${apiClient.getHandshakeState().token}`,
-              },
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch notifications: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          set({ notifications: data.notifications || [] });
-        } catch (error) {
-          console.error("Failed to fetch notifications:", error);
-        }
-      },
-
-      createNotification: async (
-        type: NotificationType,
-        title: string,
-        message: string,
-        metadata?: Record<string, unknown>
-      ) => {
-        try {
-          const response = await fetch(
-            `${getApiBaseUrl()}/v1/notifications`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiClient.getHandshakeState().token}`,
-              },
-              body: JSON.stringify({ type, title, message, metadata }),
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error(`Failed to create notification: ${response.statusText}`);
-          }
-
-          const notification = await response.json();
-          set((state) => ({
-            notifications: [notification, ...state.notifications],
-          }));
-          return notification as XiNotification;
-        } catch (error) {
-          console.error("Failed to create notification:", error);
-          return null;
-        }
-      },
-
-      markNotificationRead: async (id: string) => {
-        try {
-          const response = await fetch(
-            `${getApiBaseUrl()}/v1/notifications/${id}/read`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${apiClient.getHandshakeState().token}`,
-              },
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error(`Failed to mark notification read: ${response.statusText}`);
-          }
-
-          set((state) => ({
-            notifications: state.notifications.map((n) =>
-              n.id === id ? { ...n, read: true } : n
-            ),
-          }));
-          return true;
-        } catch (error) {
-          console.error("Failed to mark notification read:", error);
-          return false;
-        }
-      },
-
-      deleteNotification: async (id: string) => {
-        try {
-          const response = await fetch(
-            `${getApiBaseUrl()}/v1/notifications/${id}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${apiClient.getHandshakeState().token}`,
-              },
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error(`Failed to delete notification: ${response.statusText}`);
-          }
-
-          set((state) => ({
-            notifications: state.notifications.filter((n) => n.id !== id),
-          }));
-          return true;
-        } catch (error) {
-          console.error("Failed to delete notification:", error);
-          return false;
-        }
-      },
-
-      clearAllNotifications: async () => {
-        const state = get();
-        let success = true;
-
-        for (const notification of state.notifications) {
-          const deleted = await get().deleteNotification(notification.id);
-          if (!deleted) success = false;
-        }
-
-        if (success) {
-          set({ notifications: [] });
-        }
-        return success;
-      },
-
       setTheme: (theme: "light" | "dark" | "system") => {
         set((state) => {
           if (!state.config) return state;
@@ -346,7 +206,6 @@ export const useConfigStore = create<ConfigState>()(
       reset: () => {
         set({
           config: null,
-          notifications: [],
           isLoading: false,
           error: null,
           lastFetched: null,
@@ -381,28 +240,5 @@ export function useTheme() {
   return {
     theme: config?.ui.theme ?? "system",
     setTheme: applyTheme,
-  };
-}
-
-export function useNotifications() {
-  const {
-    notifications,
-    fetchNotifications,
-    createNotification,
-    markNotificationRead,
-    deleteNotification,
-    clearAllNotifications,
-  } = useConfigStore();
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  return {
-    notifications,
-    unreadCount,
-    fetchNotifications,
-    createNotification,
-    markNotificationRead,
-    deleteNotification,
-    clearAllNotifications,
   };
 }

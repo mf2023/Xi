@@ -23,11 +23,8 @@ Frontend startup module for Xi Launcher.
 """
 
 import os
-import sys
-import json
 import time
 import platform
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -35,105 +32,33 @@ from typing import Optional
 from ..core.dc import XiLogger
 
 
-def ensure_frontend_build(root_dir: Path, logger: XiLogger) -> Optional[Path]:
+def ensure_frontend_ready(frontend_dir: Path, logger: XiLogger) -> bool:
     """
-    Ensure frontend is built and ready.
+    Ensure frontend dependencies and build are ready.
     
     Args:
-        root_dir: Project root directory
+        frontend_dir: Path to frontend directory
         logger: XiLogger instance
         
     Returns:
-        Path to frontend directory or None on failure
+        True if ready, False otherwise
     """
     is_windows = platform.system().lower().startswith("win")
     npm_cmd = "npm.cmd" if is_windows else "npm"
     
-    source_dir = root_dir / "xi" / "xis"
-    prod_dir = root_dir / ".pisceslx" / "xi"
+    node_modules = frontend_dir / "node_modules"
+    next_dir = frontend_dir / ".next"
     
-    if not source_dir.exists():
-        logger.error(
-            f"Source frontend directory not found: {source_dir}",
-            event="xi.launcher.source_missing"
-        )
-        return None
-    
-    needs_build = False
-    
-    if not prod_dir.exists():
+    if not node_modules.exists():
+        print("[INFO] Installing frontend dependencies...")
         logger.info(
-            "Production directory does not exist, creating...",
-            event="xi.launcher.create_prod_dir"
-        )
-        needs_build = True
-    elif not (prod_dir / "node_modules").exists():
-        logger.info(
-            "node_modules not found, need to install dependencies",
-            event="xi.launcher.need_install"
-        )
-        needs_build = True
-    elif not (prod_dir / ".next").exists():
-        logger.info(
-            ".next build not found, need to build",
-            event="xi.launcher.need_build"
-        )
-        needs_build = True
-    else:
-        source_pkg = source_dir / "package.json"
-        prod_pkg = prod_dir / "package.json"
-        
-        if source_pkg.exists() and prod_pkg.exists():
-            with open(source_pkg) as f:
-                src_data = json.load(f)
-            with open(prod_pkg) as f:
-                prod_data = json.load(f)
-            
-            if src_data.get("version") != prod_data.get("version"):
-                logger.info(
-                    "Version mismatch, need to rebuild",
-                    event="xi.launcher.version_mismatch"
-                )
-                needs_build = True
-    
-    if needs_build:
-        print("\n[INFO] Copying source to production directory...")
-        
-        if prod_dir.exists():
-            logger.info(
-                f"Removing existing production directory: {prod_dir}",
-                event="xi.launcher.remove_prod_dir"
-            )
-            shutil.rmtree(prod_dir)
-        
-        logger.info(
-            f"Copying source to production directory: {prod_dir}",
-            event="xi.launcher.copy_source"
-        )
-        shutil.copytree(source_dir, prod_dir)
-        
-        node_modules = prod_dir / "node_modules"
-        lock_file = prod_dir / "package-lock.json"
-        
-        if node_modules.exists():
-            logger.info(
-                "Removing existing node_modules for clean install",
-                event="xi.launcher.remove_node_modules"
-            )
-            shutil.rmtree(node_modules)
-        
-        if lock_file.exists():
-            lock_file.unlink()
-        
-        print("[INFO] Installing dependencies...")
-        logger.info(
-            "Running npm install",
+            "node_modules not found, running npm install",
             event="xi.launcher.npm_install"
         )
         
         install_result = subprocess.run(
             [npm_cmd, "install"],
-            cwd=str(prod_dir),
+            cwd=str(frontend_dir),
             capture_output=True,
             text=True
         )
@@ -144,17 +69,18 @@ def ensure_frontend_build(root_dir: Path, logger: XiLogger) -> Optional[Path]:
                 event="xi.launcher.npm_install_error"
             )
             print(f"[ERROR] npm install failed: {install_result.stderr}")
-            return None
-        
-        print("[INFO] Building production bundle...")
+            return False
+    
+    if not next_dir.exists():
+        print("[INFO] Building frontend...")
         logger.info(
-            "Running npm run build",
+            ".next not found, running npm run build",
             event="xi.launcher.npm_build"
         )
         
         build_result = subprocess.run(
             [npm_cmd, "run", "build"],
-            cwd=str(prod_dir),
+            cwd=str(frontend_dir),
             capture_output=True,
             text=True
         )
@@ -165,15 +91,9 @@ def ensure_frontend_build(root_dir: Path, logger: XiLogger) -> Optional[Path]:
                 event="xi.launcher.npm_build_error"
             )
             print(f"[ERROR] npm run build failed: {build_result.stderr}")
-            return None
-        
-        print("[INFO] Frontend build complete!\n")
-        logger.info(
-            "Frontend build complete",
-            event="xi.launcher.build_complete"
-        )
+            return False
     
-    return prod_dir
+    return True
 
 
 def start_frontend(
@@ -199,8 +119,16 @@ def start_frontend(
     is_windows = platform.system().lower().startswith("win")
     npm_cmd = "npm.cmd" if is_windows else "npm"
     
-    frontend_dir = ensure_frontend_build(root_dir, logger)
-    if not frontend_dir:
+    frontend_dir = root_dir / "xi" / "xis"
+    
+    if not frontend_dir.exists():
+        logger.error(
+            f"Frontend directory not found: {frontend_dir}",
+            event="xi.launcher.frontend_missing"
+        )
+        return None
+    
+    if not ensure_frontend_ready(frontend_dir, logger):
         return None
     
     logger.info(
