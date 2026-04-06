@@ -23,6 +23,7 @@ import { useState, useEffect, useRef } from "react";
 import { Wifi, Globe, Signal, WifiOff, Settings, RefreshCw, Info, Lock } from "lucide-react";
 import { useStatusStore } from "@/lib/stores/status-store";
 import type { NetworkType, WifiNetwork } from "@/lib/api/status-ws";
+import { useI18n } from "@/lib/i18n";
 
 interface NetworkPopupProps {
   isOpen: boolean;
@@ -43,19 +44,6 @@ const getNetworkIcon = (type: NetworkType, className: string = "h-4 w-4") => {
   }
 };
 
-const getNetworkTitle = (type: NetworkType): string => {
-  switch (type) {
-    case "ethernet":
-      return "Ethernet";
-    case "wifi":
-      return "WLAN";
-    case "mobile":
-      return "Mobile Data";
-    default:
-      return "Network";
-  }
-};
-
 const getSignalBars = (signal: number) => {
   if (signal >= 80) return 4;
   if (signal >= 60) return 3;
@@ -64,6 +52,7 @@ const getSignalBars = (signal: number) => {
 };
 
 export function NetworkPopup({ isOpen, onClose, anchorRef }: NetworkPopupProps) {
+  const { t } = useI18n();
   const [isClosing, setIsClosing] = useState(false);
   const [position, setPosition] = useState({ top: 0, right: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
@@ -124,6 +113,19 @@ export function NetworkPopup({ isOpen, onClose, anchorRef }: NetworkPopupProps) 
   const connectedNetwork = wifiNetworks.find(n => n.ssid === connectedSsid);
   const otherNetworks = wifiNetworks.filter(n => n.ssid !== connectedSsid);
 
+  const getNetworkTitle = (type: NetworkType): string => {
+    switch (type) {
+      case "ethernet":
+        return t("network.ethernet");
+      case "wifi":
+        return t("network.wlan");
+      case "mobile":
+        return t("network.mobileData");
+      default:
+        return t("network.network");
+    }
+  };
+
   return (
     <div
       ref={popupRef}
@@ -158,13 +160,13 @@ export function NetworkPopup({ isOpen, onClose, anchorRef }: NetworkPopupProps) 
             </div>
             <div className="network-popup__connected-body">
               <span className="network-popup__connected-name">{connectedNetwork.ssid}</span>
-              <span className="network-popup__connected-status">已连接，安全</span>
+              <span className="network-popup__connected-status">{t("network.connectedSecure")}</span>
             </div>
             <button className="network-popup__info-btn">
               <Info className="h-5 w-5" />
             </button>
             <button className="network-popup__disconnect-btn">
-              断开连接
+              {t("network.disconnect")}
             </button>
           </div>
         )}
@@ -191,7 +193,7 @@ export function NetworkPopup({ isOpen, onClose, anchorRef }: NetworkPopupProps) 
             ))}
             {otherNetworks.length === 0 && !connectedNetwork && (
               <div className="network-popup__empty">
-                <span>正在扫描网络...</span>
+                <span>{t("network.scanning")}</span>
               </div>
             )}
           </div>
@@ -199,7 +201,7 @@ export function NetworkPopup({ isOpen, onClose, anchorRef }: NetworkPopupProps) 
 
         {/* Footer */}
         <div className="network-popup__footer">
-          <span className="network-popup__footer-text">更多 Wi-Fi 设置</span>
+          <span className="network-popup__footer-text">{t("network.moreWifiSettings")}</span>
           <div className="network-popup__footer-actions">
             <button className="network-popup__footer-icon-btn">
               <Settings className="h-4 w-4" />

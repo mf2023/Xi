@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { GlobalOverlay } from "@/components/layout/global-overlay";
 import { PiscesL1WelcomeWS, WelcomeServerMessage } from "@/lib/api/welcome-ws";
+import { useI18n } from "@/lib/i18n";
 
 interface WelcomeScreenProps {
   onComplete: () => void;
@@ -52,36 +53,38 @@ interface ValidationStep {
   warnings?: string[];
 }
 
-const STEP_LABELS: Record<string, string> = {
-  xi_toml_syntax: "Xi Configuration Syntax",
-  project_info: "Project Information",
-  subcommands: "Subcommand Configurations",
-  python_env: "Python Environment",
-  ui_config: "UI Configuration",
-  paths_config: "Paths Configuration",
+const STEP_LABELS_KEYS: Record<string, string> = {
+  xi_toml_syntax: "welcome.stepLabels.xi_toml_syntax",
+  project_info: "welcome.stepLabels.project_info",
+  subcommands: "welcome.stepLabels.subcommands",
+  python_env: "welcome.stepLabels.python_env",
+  ui_config: "welcome.stepLabels.ui_config",
+  paths_config: "welcome.stepLabels.paths_config",
 };
 
-const SETUP_STEP_LABELS: Record<string, string> = {
-  venv_create: "Virtual Environment",
-  install_deps: "Installing Dependencies",
-  create_dirs: "Creating Directories",
-  verify_setup: "Verifying Setup",
+const SETUP_STEP_LABELS_KEYS: Record<string, string> = {
+  venv_create: "welcome.setupStepLabels.venv_create",
+  install_deps: "welcome.setupStepLabels.install_deps",
+  create_dirs: "welcome.setupStepLabels.create_dirs",
+  verify_setup: "welcome.setupStepLabels.verify_setup",
 };
 
 function ValidationStepItem({
   step,
-  labels,
+  labelKeys,
   expandedSteps,
-  toggleStep
+  toggleStep,
+  t
 }: {
   step: ValidationStep;
-  labels: Record<string, string>;
+  labelKeys: Record<string, string>;
   expandedSteps: Set<string>;
   toggleStep: (stepId: string) => void;
+  t: (key: string) => string;
 }) {
   const isExpanded = expandedSteps.has(step.step);
   const hasDetails = step.data || step.error || (step.warnings && step.warnings.length > 0);
-  const label = labels[step.step] || step.step;
+  const label = t(labelKeys[step.step]) || step.step;
 
   const getStatusIcon = () => {
     if (step.status === "checking") {
@@ -285,6 +288,7 @@ function ValidationStepItem({
 }
 
 export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
+  const { t } = useI18n();
   const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
   const [countdown, setCountdown] = useState(5);
   const [validationSteps, setValidationSteps] = useState<ValidationStep[]>([]);
@@ -342,7 +346,8 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
     wsRef.current.on("checking", (msg: WelcomeServerMessage) => {
       if (!isMountedRef.current) return;
       if (msg.type === "checking") {
-        setCurrentMessage(msg.message || `Checking ${STEP_LABELS[msg.step] || msg.step}...`);
+        const stepLabel = STEP_LABELS_KEYS[msg.step] ? t(STEP_LABELS_KEYS[msg.step]) : msg.step;
+        setCurrentMessage(msg.message || `Checking ${stepLabel}...`);
         setValidationSteps((prev) => {
           const existing = prev.find((s) => s.step === msg.step);
           if (existing) {
@@ -383,7 +388,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
             },
           ];
         });
-        setSetupCurrentMessage(msg.message || `Setting up ${SETUP_STEP_LABELS[msg.step] || msg.step}...`);
+        setSetupCurrentMessage(msg.message || `Setting up ${SETUP_STEP_LABELS_KEYS[msg.step] ? t(SETUP_STEP_LABELS_KEYS[msg.step]) : msg.step}...`);
       }
     });
 
@@ -629,7 +634,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       <GlobalOverlay layout="full">
         <div className="flex flex-col items-center justify-center h-full text-center">
           <h1 className="text-3xl font-bold mb-10 text-foreground">
-            Welcome to Xi Studio
+            {t("welcome.title")}
           </h1>
 
           <Button
@@ -637,7 +642,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
             size="lg"
             className="px-8"
           >
-            Get Started
+            {t("welcome.getStarted")}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
@@ -651,7 +656,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         <GlobalOverlay layout="full">
           <div className="flex flex-col h-full">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-center">Service Agreement</h2>
+              <h2 className="text-xl font-semibold text-center">{t("welcome.serviceAgreement")}</h2>
             </div>
             <div className="flex-1 flex flex-col min-h-0">
               <div className="border border-border rounded-lg overflow-hidden mb-6 flex-1 min-h-0">
@@ -663,7 +668,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                   {agreementText ? (
                     <ReactMarkdown>{agreementText}</ReactMarkdown>
                   ) : (
-                    "Loading agreement..."
+                    t("welcome.loadingAgreement")
                   )}
                 </div>
               </div>
@@ -674,7 +679,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                   size="lg"
                   className="px-8"
                 >
-                  Disagree
+                  {t("welcome.disagree")}
                 </Button>
                 <Button
                   onClick={handleAgree}
@@ -682,7 +687,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                   size="lg"
                   className="px-8"
                 >
-                  {countdown > 0 ? `Agree (${countdown}s)` : !hasScrolledToBottom ? "Scroll to read" : "Agree"}
+                  {countdown > 0 ? `${t("welcome.agree")} (${countdown}s)` : !hasScrolledToBottom ? t("welcome.scrollToRead") : t("welcome.agree")}
                 </Button>
               </div>
             </div>
@@ -694,19 +699,18 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center gap-2">
                 <AlertCircle className="h-5 w-5 text-red-500" />
-                Decline Agreement?
+                {t("welcome.declineAgreement")}
               </DialogTitle>
               <DialogDescription>
-                You must agree to the Service Agreement to use Xi Studio.
-                Are you sure you want to decline?
+                {t("welcome.mustAgree")}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">
               <Button onClick={handleDisagreeCancel}>
-                Cancel
+                {t("welcome.cancel")}
               </Button>
               <Button variant="destructive" onClick={handleDisagreeConfirm}>
-                Decline
+                {t("welcome.decline")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -729,7 +733,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         rightContent={
           <div className="flex flex-col h-full">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-center">Validating Configuration</h2>
+              <h2 className="text-xl font-semibold text-center">{t("welcome.validatingConfig")}</h2>
             </div>
             <div className="flex-1 flex flex-col min-h-0">
               {!showValidationContent ? (
@@ -744,7 +748,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground text-center">
-                    {validationSteps.length > 0 ? "Validating..." : "Starting validation..."}
+                    {validationSteps.length > 0 ? t("welcome.validating") : t("welcome.startingValidation")}
                   </p>
                 </div>
               ) : (
@@ -754,9 +758,10 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                       <ValidationStepItem
                         key={s.step}
                         step={s}
-                        labels={STEP_LABELS}
+                        labelKeys={STEP_LABELS_KEYS}
                         expandedSteps={expandedValidationSteps}
                         toggleStep={toggleValidationStep}
+                        t={t}
                       />
                     ))}
                   </div>
@@ -769,7 +774,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                         variant="outline"
                         className="px-8"
                       >
-                        Retry
+                        {t("welcome.retry")}
                       </Button>
                     )}
                     {isValidationComplete && (
@@ -778,7 +783,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                         size="lg"
                         className="px-8"
                       >
-                        Next
+                        {t("welcome.next")}
                         <ArrowRight className="ml-2 h-5 w-5" />
                       </Button>
                     )}
@@ -807,7 +812,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         rightContent={
           <div className="flex flex-col h-full">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-center">Environment Setup</h2>
+              <h2 className="text-xl font-semibold text-center">{t("welcome.environmentSetup")}</h2>
             </div>
             <div className="flex-1 flex flex-col min-h-0">
               {!showSetupContent ? (
@@ -822,7 +827,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground text-center">
-                    {setupSteps.length > 0 ? "Setting up..." : "Starting setup..."}
+                    {setupSteps.length > 0 ? t("welcome.settingUp") : t("welcome.startingSetup")}
                   </p>
                 </div>
               ) : (
@@ -832,9 +837,10 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                       <ValidationStepItem
                         key={s.step}
                         step={s}
-                        labels={SETUP_STEP_LABELS}
+                        labelKeys={SETUP_STEP_LABELS_KEYS}
                         expandedSteps={expandedSetupSteps}
                         toggleStep={toggleSetupStep}
+                        t={t}
                       />
                     ))}
                   </div>
@@ -848,7 +854,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                           variant="outline"
                           className="px-8"
                         >
-                          Retry
+                          {t("welcome.retry")}
                         </Button>
                         <Button
                           onClick={handleSetupSkip}
@@ -856,7 +862,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                           variant="outline"
                           className="px-8"
                         >
-                          Skip
+                          {t("welcome.skip")}
                         </Button>
                       </>
                     )}
@@ -866,7 +872,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                         size="lg"
                         className="px-8"
                       >
-                        Next
+                        {t("welcome.next")}
                         <ArrowRight className="ml-2 h-5 w-5" />
                       </Button>
                     )}
@@ -883,18 +889,18 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-center gap-2">
               <AlertCircle className="h-5 w-5 text-yellow-500" />
-              Skip Environment Setup?
+              {t("welcome.skipSetup")}
             </DialogTitle>
             <DialogDescription>
-              Skipping may cause some features to not work. You can run setup manually from settings later.
+              {t("welcome.skipWarning")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
             <Button onClick={handleSkipCancel} variant="outline">
-              Cancel
+              {t("welcome.cancel")}
             </Button>
             <Button onClick={handleSkipConfirm} variant="destructive">
-              Skip Anyway
+              {t("welcome.skipAnyway")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -912,11 +918,11 @@ if (step === 4) {
           </div>
 
           <h1 className="text-2xl font-bold mb-4 text-foreground">
-            Congratulations!
+            {t("welcome.congratulations")}
           </h1>
 
           <p className="text-base text-muted-foreground mb-6">
-            You can now use Xi Studio
+            {t("welcome.canNowUse")}
           </p>
 
           <Button
@@ -924,7 +930,7 @@ if (step === 4) {
             size="lg"
             className="px-8"
           >
-            Get Started
+            {t("welcome.getStarted")}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>

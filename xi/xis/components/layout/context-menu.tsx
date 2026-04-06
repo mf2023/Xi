@@ -20,8 +20,9 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from "react";
+import { ChevronRight } from "lucide-react";
 
-interface ContextMenuItem {
+export interface ContextMenuItem {
   id: string;
   label: string;
   icon?: ReactNode;
@@ -29,7 +30,9 @@ interface ContextMenuItem {
   disabled?: boolean;
   divider?: boolean;
   danger?: boolean;
+  checked?: boolean;
   onClick?: () => void;
+  children?: ContextMenuItem[];
 }
 
 interface ContextMenuState {
@@ -58,6 +61,104 @@ interface ContextMenuProviderProps {
   children: ReactNode;
 }
 
+function MenuItem({
+  item,
+  onClick,
+  onHover,
+  isSubmenuOpen,
+}: {
+  item: ContextMenuItem;
+  onClick: (item: ContextMenuItem) => void;
+  onHover?: (item: ContextMenuItem) => void;
+  isSubmenuOpen?: boolean;
+}) {
+  const hasChildren = item.children && item.children.length > 0;
+
+  if (item.divider) {
+    return <div className="my-1 h-px bg-border/50" />;
+  }
+
+  return (
+    <button
+      className={`
+        w-full flex items-center gap-3 px-3 py-2 text-sm text-left
+        transition-colors duration-100
+        ${item.disabled
+          ? "opacity-50 cursor-not-allowed"
+          : item.danger
+            ? "text-red-500 hover:bg-red-500/10"
+            : "hover:bg-muted/50"
+        }
+        ${isSubmenuOpen ? "bg-muted/50" : ""}
+      `}
+      onClick={() => onClick(item)}
+      onMouseEnter={() => onHover?.(item)}
+      disabled={item.disabled}
+    >
+      {item.icon && <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>}
+      {item.checked !== undefined && (
+        <span className="w-4 h-4 flex items-center justify-center">
+          {item.checked ? "✓" : ""}
+        </span>
+      )}
+      <span className="flex-1">{item.label}</span>
+      {item.shortcut && (
+        <span className="text-xs text-muted-foreground">{item.shortcut}</span>
+      )}
+      {hasChildren && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+    </button>
+  );
+}
+
+function SubMenu({
+  items,
+  parentRect,
+  onItemClick,
+  onSubmenuEnter,
+}: {
+  items: ContextMenuItem[];
+  parentRect: DOMRect;
+  onItemClick: (item: ContextMenuItem) => void;
+  onSubmenuEnter?: () => void;
+}) {
+  const submenuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ left: 0, top: 0 });
+
+  useEffect(() => {
+    if (submenuRef.current) {
+      const rect = submenuRef.current.getBoundingClientRect();
+      let left = parentRect.right;
+      let top = parentRect.top;
+
+      if (left + rect.width > window.innerWidth) {
+        left = parentRect.left - rect.width;
+      }
+      if (top + rect.height > window.innerHeight) {
+        top = window.innerHeight - rect.height;
+      }
+
+      setPosition({ left, top });
+    }
+  }, [parentRect]);
+
+  return (
+    <div
+      ref={submenuRef}
+      className="fixed z-[100] min-w-[160px] py-1 bg-popover border border-border rounded-md shadow-lg"
+      style={{ left: position.left, top: position.top }}
+      onMouseEnter={onSubmenuEnter}
+    >
+      {items.map((item, index) => (
+        <MenuItem
+          key={item.id}
+          item={item}
+          onClick={onItemClick}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function ContextMenuProvider({ children }: ContextMenuProviderProps) {
   const [menuState, setMenuState] = useState<ContextMenuState>({
     x: 0,
@@ -65,19 +166,24 @@ export function ContextMenuProvider({ children }: ContextMenuProviderProps) {
     items: [],
     visible: false,
   });
+  const [openSubmenu, setOpenSubmenu] = useState<{ item: ContextMenuItem; rect: DOMRect } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const showContextMenu = useCallback((x: number, y: number, items: ContextMenuItem[]) => {
     setMenuState({ x, y, items, visible: true });
+    setOpenSubmenu(null);
   }, []);
 
   const hideContextMenu = useCallback(() => {
     setMenuState((prev) => ({ ...prev, visible: false }));
+    setOpenSubmenu(null);
   }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         hideContextMenu();
       }
     };
@@ -101,49 +207,63 @@ export function ContextMenuProvider({ children }: ContextMenuProviderProps) {
 
   const handleItemClick = useCallback((item: ContextMenuItem) => {
     if (item.disabled) return;
+    if (item.children && item.children.length > 0) {
+      return;
+    }
     hideContextMenu();
     item.onClick?.();
   }, [hideContextMenu]);
+
+  const handleItemHover = useCallback((item: ContextMenuItem) => {
+    if (item.children && item.children.length > 0) {
+      const button = itemRefs.current.get(item.id);
+      if (button) {
+        setOpenSubmenu({ item, rect: button.getBoundingClientRect() });
+      }
+    }
+  }, []);
+
+  const handleMenuLeave = useCallback(() => {
+    setOpenSubmenu(null);
+  }, []);
 
   return (
     <ContextMenuContext.Provider value={{ showContextMenu, hideContextMenu }}>
       {children}
       {menuState.visible && (
-        <div
-          ref={menuRef}
-          className="context-menu"
-          style={{
-            '--context-menu-left': `${Math.min(menuState.x, window.innerWidth - 220)}px`,
-            '--context-menu-top': `${Math.min(menuState.y, window.innerHeight - (menuState.items.length * 36 + 16))}px`,
-          } as React.CSSProperties}
-        >
-          {menuState.items.map((item, index) => (
-            item.divider ? (
-              <div key={`divider-${index}`} className="my-1 h-px bg-border/50" />
-            ) : (
-              <button
+        <div ref={containerRef} onMouseLeave={handleMenuLeave}>
+          <div
+            ref={menuRef}
+            className="fixed z-[99] min-w-[200px] py-1 bg-popover border border-border rounded-md shadow-lg"
+            style={{
+              left: Math.min(menuState.x, window.innerWidth - 220),
+              top: Math.min(menuState.y, window.innerHeight - (menuState.items.length * 36 + 16)),
+            }}
+          >
+            {menuState.items.map((item, index) => (
+              <div
                 key={item.id}
-                className={`
-                  w-full flex items-center gap-3 px-3 py-2 text-sm text-left
-                  transition-colors duration-100
-                  ${item.disabled 
-                    ? "opacity-50 cursor-not-allowed" 
-                    : item.danger
-                      ? "text-red-500 hover:bg-red-500/10"
-                      : "hover:bg-muted/50"
-                  }
-                `}
-                onClick={() => handleItemClick(item)}
-                disabled={item.disabled}
+                ref={(el) => {
+                  if (el) itemRefs.current.set(item.id, el);
+                }}
               >
-                {item.icon && <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>}
-                <span className="flex-1">{item.label}</span>
-                {item.shortcut && (
-                  <span className="text-xs text-muted-foreground">{item.shortcut}</span>
-                )}
-              </button>
-            )
-          ))}
+                <MenuItem
+                  item={item}
+                  onClick={handleItemClick}
+                  onHover={handleItemHover}
+                  isSubmenuOpen={openSubmenu?.item.id === item.id}
+                />
+              </div>
+            ))}
+          </div>
+          {openSubmenu && (
+            <SubMenu
+              items={openSubmenu.item.children || []}
+              parentRect={openSubmenu.rect}
+              onItemClick={handleItemClick}
+              onSubmenuEnter={() => {}}
+            />
+          )}
         </div>
       )}
     </ContextMenuContext.Provider>

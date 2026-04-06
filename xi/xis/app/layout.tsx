@@ -23,6 +23,7 @@ import { AppsProvider } from "@/components/layout/apps-context";
 import { ContextMenuProvider } from "@/components/layout/context-menu";
 import { MainLayout } from "@/components/layout/main-layout";
 import { AppBootstrap } from "@/components/app-bootstrap";
+import { I18nProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Xi Studio",
@@ -40,17 +41,19 @@ export default function RootLayout({
   return (
     <html lang="en" className="light" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <Providers>
-          <AppBootstrap>
-            <SidebarProvider>
-              <AppsProvider>
-                <ContextMenuProvider>
-                  <MainLayout>{children}</MainLayout>
-                </ContextMenuProvider>
-              </AppsProvider>
-            </SidebarProvider>
-          </AppBootstrap>
-        </Providers>
+        <I18nProvider>
+          <Providers>
+            <AppBootstrap>
+              <SidebarProvider>
+                <AppsProvider>
+                  <ContextMenuProvider>
+                    <MainLayout>{children}</MainLayout>
+                  </ContextMenuProvider>
+                </AppsProvider>
+              </SidebarProvider>
+            </AppBootstrap>
+          </Providers>
+        </I18nProvider>
       </body>
     </html>
   );

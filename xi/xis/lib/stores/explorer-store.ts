@@ -18,13 +18,15 @@
  */
 
 import { create } from "zustand";
-import type { FileItem, DiskInfo } from "@/lib/api/explorer-ws";
+import type { FileItem, DiskInfo, DriveInfo } from "@/lib/api/explorer-ws";
 import { PiscesL1ExplorerWS, explorerWS, type ExplorerServerMessage } from "@/lib/api/explorer-ws";
 
 interface ExplorerState {
   currentPath: string;
   items: FileItem[];
   diskInfo: DiskInfo | null;
+  drives: DriveInfo[];
+  isWindows: boolean;
   isLoading: boolean;
   error: string | null;
   ws: PiscesL1ExplorerWS | null;
@@ -34,7 +36,9 @@ interface ExplorerState {
 
   connectWebSocket: () => Promise<void>;
   disconnectWebSocket: () => void;
+  getDrives: () => void;
   browse: (path: string) => void;
+  clearPath: () => void;
   createFolder: (path: string) => void;
   createFile: (path: string, content: string) => void;
   deleteItem: (path: string) => void;
@@ -47,9 +51,11 @@ interface ExplorerState {
 }
 
 export const useExplorerStore = create<ExplorerState>((set, get) => ({
-  currentPath: ".",
+  currentPath: "",
   items: [],
   diskInfo: null,
+  drives: [],
+  isWindows: false,
   isLoading: false,
   error: null,
   ws: null,
@@ -66,22 +72,49 @@ export const useExplorerStore = create<ExplorerState>((set, get) => ({
     const ws = new PiscesL1ExplorerWS();
 
     ws.onConnect(() => {
-      set({ isWsConnected: true, error: null });
-      ws.browse(get().currentPath);
+      set({ isWsConnected: true, error: null, isLoading: false });
+      ws.getDrives();
     });
 
     ws.onDisconnect(() => {
       set({ isWsConnected: false });
     });
 
-    ws.on("directory", (msg: ExplorerServerMessage) => {
-      if (msg.type === "directory") {
+    ws.on("drives", (msg: ExplorerServerMessage) => {
+      if (msg.type === "drives") {
         set({
-          currentPath: msg.path,
-          items: msg.items,
-          diskInfo: msg.disk || null,
+          drives: msg.drives,
+          isWindows: msg.is_windows,
           isLoading: false,
         });
+        if (msg.drives.length > 0 && !get().currentPath) {
+          ws.browse(msg.drives[0].path);
+        }
+      }
+    });
+
+    ws.on("directory", (msg: ExplorerServerMessage) => {
+      if (msg.type === "directory") {
+        const storePath = get().currentPath;
+        const normalizePath = (p: string) => {
+          let normalized = p.replace(/\\/g, "/");
+          if (normalized.length > 1 && normalized.endsWith("/")) {
+            normalized = normalized.slice(0, -1);
+          }
+          return normalized;
+        };
+        
+        const normalizedStorePath = normalizePath(storePath);
+        const msgPath = normalizePath(msg.path);
+        
+        if (msgPath === normalizedStorePath) {
+          set({
+            items: msg.items,
+            diskInfo: msg.disk || null,
+            isWindows: msg.is_windows || false,
+            isLoading: false,
+          });
+        }
       }
     });
 
@@ -118,14 +151,28 @@ export const useExplorerStore = create<ExplorerState>((set, get) => ({
     }
   },
 
-  browse: (path) => {
+  getDrives: () => {
     const ws = get().ws;
     if (ws && ws.isConnected) {
-      set({ isLoading: true });
-      ws.browse(path);
+      ws.getDrives();
     } else {
       set({ error: "WebSocket not connected" });
     }
+  },
+
+  browse: (path) => {
+    const ws = get().ws;
+    if (ws && ws.isConnected) {
+      const normalizedPath = path.replace(/\\/g, "/");
+      set({ isLoading: true, currentPath: normalizedPath });
+      ws.browse(normalizedPath);
+    } else {
+      set({ error: "WebSocket not connected" });
+    }
+  },
+
+  clearPath: () => {
+    set({ currentPath: "", items: [], isLoading: false });
   },
 
   createFolder: (path) => {

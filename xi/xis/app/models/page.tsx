@@ -33,8 +33,10 @@ import {
 import { apiClient } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import type { ModelInfo } from "@/types";
+import { useI18n } from "@/lib/i18n";
 
 export default function ModelsPage() {
+  const { t } = useI18n();
   const { data: models, isLoading, refetch } = useQuery({
     queryKey: ["models"],
     queryFn: () => apiClient.listModels(),
@@ -46,11 +48,11 @@ export default function ModelsPage() {
     <ScrollArea className="h-full">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">Models</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("modelsPage.title")}</h1>
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => refetch()}>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
+                {t("modelsPage.refresh")}
               </Button>
             </div>
           </div>
@@ -81,13 +83,13 @@ export default function ModelsPage() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Created</span>
+                        <span className="text-muted-foreground">{t("modelsPage.created")}</span>
                         <span>{new Date(model.created * 1000).toLocaleDateString()}</span>
                       </div>
                       <div className="flex gap-2">
                         <Button variant="secondary" size="sm" className="flex-1">
                           <Download className="mr-2 h-4 w-4" />
-                          Download
+                          {t("modelsPage.download")}
                         </Button>
                         <Button variant="secondary" size="sm">
                           <Settings className="h-4 w-4" />

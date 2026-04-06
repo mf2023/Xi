@@ -27,7 +27,6 @@ from .handshake import setup_handshake_route
 from .runs import setup_runs_routes
 from .models import setup_models_routes
 from .inference import setup_inference_routes
-from .filesystem import setup_filesystem_routes
 from .xi import setup_xi_routes
 from .notifications import setup_notification_routes
 from .tools import setup_tools_routes
@@ -54,7 +53,6 @@ def setup_routes(app, executor, session_manager, notification_manager, root_dir,
     setup_runs_routes(app, root_dir, executor, logger, request_count)
     setup_models_routes(app, logger, request_count)
     setup_inference_routes(app, logger, request_count)
-    setup_filesystem_routes(app, root_dir, logger, request_count)
     setup_xi_routes(app, root_dir, logger, request_count)
     setup_notification_routes(app, notification_manager, logger, request_count)
     setup_tools_routes(app, logger, request_count)
@@ -69,7 +67,6 @@ __all__ = [
     "setup_runs_routes",
     "setup_models_routes",
     "setup_inference_routes",
-    "setup_filesystem_routes",
     "setup_xi_routes",
     "setup_notification_routes",
     "setup_tools_routes",

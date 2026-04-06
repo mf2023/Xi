@@ -32,29 +32,32 @@ import {
   Shield,
   Key,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export default function SettingsPage() {
+  const { t } = useI18n();
+  
   return (
     <ScrollArea className="h-full">
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("settingsPage.title")}</h1>
 
           <div className="grid gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Server className="h-5 w-5" />
-                  Server Configuration
+                  {t("settingsPage.serverConfig")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>API Host</Label>
+                    <Label>{t("settingsPage.apiHost")}</Label>
                     <Input defaultValue="127.0.0.1" />
                   </div>
                   <div className="space-y-2">
-                    <Label>API Port</Label>
+                    <Label>{t("settingsPage.apiPort")}</Label>
                     <Input defaultValue="8000" />
                   </div>
                 </div>
@@ -65,15 +68,15 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Key className="h-5 w-5" />
-                  API Key
+                  {t("settingsPage.apiKey")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>API Key</Label>
-                  <Input type="password" placeholder="Enter your API key" />
+                  <Label>{t("settingsPage.apiKey")}</Label>
+                  <Input type="password" placeholder={t("settingsPage.enterApiKey")} />
                 </div>
-                <Button variant="secondary">Save API Key</Button>
+                <Button variant="secondary">{t("settingsPage.saveApiKey")}</Button>
               </CardContent>
             </Card>
 
@@ -81,12 +84,12 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Palette className="h-5 w-5" />
-                  Appearance
+                  {t("settingsPage.appearance")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Theme settings will be available here.
+                  {t("settingsPage.appearanceDesc")}
                 </p>
               </CardContent>
             </Card>
@@ -95,12 +98,12 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="h-5 w-5" />
-                  Notifications
+                  {t("settingsPage.notifications")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Notification settings will be available here.
+                  {t("settingsPage.notificationsDesc")}
                 </p>
               </CardContent>
             </Card>
@@ -109,12 +112,12 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Security
+                  {t("settingsPage.security")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Security settings will be available here.
+                  {t("settingsPage.securityDesc")}
                 </p>
               </CardContent>
             </Card>

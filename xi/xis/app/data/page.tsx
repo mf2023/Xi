@@ -31,8 +31,10 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 export default function DataPage() {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
 
   const datasets = [
@@ -53,17 +55,17 @@ export default function DataPage() {
     <ScrollArea className="h-full">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">Data Management</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("dataPage.title")}</h1>
             <Button variant="secondary">
               <Upload className="mr-2 h-4 w-4" />
-              Upload Dataset
+              {t("dataPage.uploadDataset")}
             </Button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Datasets</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("dataPage.totalDatasets")}</CardTitle>
                 <Database className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
@@ -72,7 +74,7 @@ export default function DataPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Samples</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("dataPage.totalSamples")}</CardTitle>
                 <FileJson className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
@@ -83,7 +85,7 @@ export default function DataPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Size</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("dataPage.totalSize")}</CardTitle>
                 <FolderOpen className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
@@ -92,7 +94,7 @@ export default function DataPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Data Types</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("dataPage.dataTypes")}</CardTitle>
                 <Database className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
@@ -104,11 +106,11 @@ export default function DataPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Datasets</CardTitle>
+                <CardTitle>{t("dataPage.datasets")}</CardTitle>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <input
-                    placeholder="Search datasets..."
+                    placeholder={t("dataPage.searchDatasets")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 pr-4 py-1 text-sm rounded-md border bg-background"
@@ -131,7 +133,7 @@ export default function DataPage() {
                         <p className="font-medium">{dataset.name}</p>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span>{dataset.type}</span>
-                          <span>{dataset.samples.toLocaleString()} samples</span>
+                          <span>{dataset.samples.toLocaleString()} {t("dataPage.samples")}</span>
                           <span>{dataset.size}</span>
                         </div>
                       </div>

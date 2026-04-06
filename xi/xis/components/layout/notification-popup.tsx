@@ -23,6 +23,7 @@ import { useState, useEffect, useRef } from "react";
 import { Bell, Check, AlertCircle, Info, AlertTriangle, Calendar, Sun, Cloud, CheckCheck, Settings2, Wifi, Bluetooth, Volume2, ChevronDown, ChevronUp } from "lucide-react";
 import { useStatusStore } from "@/lib/stores/status-store";
 import type { StatusNotification } from "@/lib/api/status-ws";
+import { useI18n } from "@/lib/i18n";
 
 const getNotificationIcon = (type: StatusNotification["type"]) => {
   switch (type) {
@@ -50,16 +51,16 @@ const getIconClass = (type: StatusNotification["type"]) => {
   }
 };
 
-const formatTime = (timeStr: string) => {
+const formatTime = (timeStr: string, t: (key: string, params?: Record<string, string | number>) => string) => {
   const date = new Date(timeStr);
   const now = new Date();
   const diff = now.getTime() - date.getTime();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
 
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
+  if (minutes < 1) return t("notifications.justNow");
+  if (minutes < 60) return t("notifications.minutesAgo", { count: minutes });
+  if (hours < 24) return t("notifications.hoursAgo", { count: hours });
   return date.toLocaleDateString();
 };
 
@@ -89,6 +90,7 @@ interface NotificationPopupProps {
 }
 
 export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPopupProps) {
+  const { t } = useI18n();
   const [isClosing, setIsClosing] = useState(false);
   const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(true);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -186,7 +188,7 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
         <div className="notification-panel__header">
           <div className="notification-panel__title">
             <Settings2 className="h-4 w-4" />
-            <span className="notification-panel__title-text">Control Center</span>
+            <span className="notification-panel__title-text">{t("notifications.controlCenter")}</span>
           </div>
         </div>
         <div className="notification-panel__controls-content">
@@ -213,7 +215,7 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
       <div className={`notification-panel__box notification-panel__box--notifications acrylic ${isNotificationsExpanded ? 'notification-panel__box--expanded' : 'notification-panel__box--collapsed'}`}>
         <div className="notification-panel__header">
           <div className="notification-panel__title">
-            <span className="notification-panel__title-text">Notifications</span>
+            <span className="notification-panel__title-text">{t("notifications.title")}</span>
             {unreadCount > 0 && (
               <span className="notification-panel__badge">{unreadCount}</span>
             )}
@@ -236,7 +238,7 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
               {notifications.length === 0 ? (
                 <div className="notification-panel__empty">
                   <Bell className="h-10 w-10 notification-panel__empty-icon" />
-                  <p className="notification-panel__empty-text">No notifications</p>
+                  <p className="notification-panel__empty-text">{t("notifications.noNotifications")}</p>
                 </div>
               ) : (
                 notifications.map((notification: StatusNotification) => (
@@ -251,7 +253,7 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
                     <div className="notification-item__body">
                       <p className="notification-item__title">{notification.title}</p>
                       <p className="notification-item__message">{notification.message}</p>
-                      <p className="notification-item__time">{formatTime(notification.time)}</p>
+                      <p className="notification-item__time">{formatTime(notification.time, t)}</p>
                     </div>
                     {!notification.read && <div className="notification-item__dot" />}
                   </div>
@@ -266,7 +268,7 @@ export function NotificationPopup({ isOpen, onClose, anchorRef }: NotificationPo
                 disabled={notifications.length === 0}
               >
                 <CheckCheck className="h-4 w-4" />
-                <span>Clear all</span>
+                <span>{t("notifications.clearAll")}</span>
               </button>
             </div>
           </>

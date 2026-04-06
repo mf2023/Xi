@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useApps } from "./apps-context";
 import { AppWindow } from "./app-window";
+import { useI18n } from "@/lib/i18n";
 
 interface MonitorWindowProps {
   state: "minimized" | "normal" | "maximized";
@@ -78,6 +79,7 @@ function getGpuVendorLabel(vendor: string): string {
 }
 
 export function MonitorWindow({ state }: MonitorWindowProps) {
+  const { t } = useI18n();
   const { 
     minimizeApp, 
     closeApp, 
@@ -151,7 +153,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
   return (
     <AppWindow
       appId="monitor"
-      title="System Monitor"
+      title={t("monitor.title")}
       icon={<Activity className="h-5 w-5 text-primary" />}
       defaultSize={{ width: 900, height: 600 }}
       onMinimize={() => minimizeApp("monitor")}
@@ -170,15 +172,15 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
         <TabsList className="w-full justify-start rounded-none border-b bg-transparent px-4 py-0 h-12">
           <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3">
             <Cpu className="h-4 w-4 mr-2" />
-            Overview
+            {t("monitor.tabs.overview")}
           </TabsTrigger>
           <TabsTrigger value="performance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3">
             <Activity className="h-4 w-4 mr-2" />
-            Performance
+            {t("monitor.tabs.performance")}
           </TabsTrigger>
           <TabsTrigger value="gpu" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3">
             <Server className="h-4 w-4 mr-2" />
-            GPU
+            {t("monitor.tabs.gpu")}
           </TabsTrigger>
         </TabsList>
 
@@ -190,7 +192,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
                   <div className="p-2 rounded-md bg-emerald-100 dark:bg-emerald-900/20">
                     <Cpu className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">CPU Usage</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t("monitor.cpuUsage")}</span>
                 </div>
                 <span className="text-2xl font-bold">{cpuPercent.toFixed(0)}%</span>
               </div>
@@ -200,7 +202,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
                   style={{ '--progress-width': `${cpuPercent}%` } as React.CSSProperties}
                 />
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">{navigator.hardwareConcurrency || 8} cores available</p>
+              <p className="mt-2 text-xs text-muted-foreground">{t("monitor.coresAvailable", { count: navigator.hardwareConcurrency || 8 })}</p>
             </div>
 
             <div className="rounded-lg border p-4">
@@ -209,7 +211,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
                   <div className="p-2 rounded-md bg-amber-100 dark:bg-amber-900/20">
                     <MemoryStick className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">Memory</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t("monitor.memoryUsage")}</span>
                 </div>
                 <span className="text-2xl font-bold">{memPercent.toFixed(0)}%</span>
               </div>
@@ -219,7 +221,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
                   style={{ '--progress-width': `${memPercent}%` } as React.CSSProperties}
                 />
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">{memUsed.toFixed(1)} / {memTotal.toFixed(1)} GB used</p>
+              <p className="mt-2 text-xs text-muted-foreground">{t("monitor.gbUsed", { used: memUsed.toFixed(1), total: memTotal.toFixed(1) })}</p>
             </div>
           </div>
 
@@ -227,8 +229,8 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
             <div className="mt-4 rounded-lg border p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Server className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">GPU Overview</span>
-                <span className="text-sm text-muted-foreground">({gpuCount} detected)</span>
+                <span className="font-medium">{t("monitor.gpuOverview")}</span>
+                <span className="text-sm text-muted-foreground">({gpuCount} {t("monitor.detected")})</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {gpus.map((gpu, idx) => {
@@ -265,21 +267,21 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
             <div className="rounded-lg border p-3 text-center">
               <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
                 <Zap className="h-3 w-3" />
-                <span className="text-xs">QPS</span>
+                <span className="text-xs">{t("monitor.qps")}</span>
               </div>
               <p className="text-xl font-semibold">{qps}</p>
             </div>
             <div className="rounded-lg border p-3 text-center">
               <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
                 <Gauge className="h-3 w-3" />
-                <span className="text-xs">Uptime</span>
+                <span className="text-xs">{t("monitor.uptime")}</span>
               </div>
               <p className="text-xl font-semibold">{formatUptime(uptime)}</p>
             </div>
             <div className="rounded-lg border p-3 text-center">
               <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
                 <Network className="h-3 w-3" />
-                <span className="text-xs">GPUs</span>
+                <span className="text-xs">{t("monitor.gpus")}</span>
               </div>
               <p className="text-xl font-semibold">{gpuCount}</p>
             </div>
@@ -289,8 +291,8 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
         <TabsContent value="performance" className="p-6 mt-0">
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Activity className="h-12 w-12 mb-4 opacity-20" />
-            <p className="text-sm">Performance metrics coming soon</p>
-            <p className="text-xs mt-1">Historical data and charts will be available here</p>
+            <p className="text-sm">{t("monitor.performanceComingSoon")}</p>
+            <p className="text-xs mt-1">{t("monitor.performanceDesc")}</p>
           </div>
         </TabsContent>
 
@@ -321,7 +323,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
                     <div className="space-y-3">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-muted-foreground">GPU Utilization</span>
+                          <span className="text-muted-foreground">{t("monitor.gpuUtilization")}</span>
                           <span>{gpu.utilization.toFixed(0)}%</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -334,7 +336,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
                       
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-muted-foreground">Memory Usage</span>
+                          <span className="text-muted-foreground">{t("monitor.gpuMemoryUsage")}</span>
                           <span>{gpu.memory_used_gb.toFixed(1)} / {gpu.memory_total_gb.toFixed(1)} GB ({memPercent.toFixed(0)}%)</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -349,14 +351,14 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
                         {gpu.temperature > 0 && (
                           <div className="flex items-center gap-2">
                             <Thermometer className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">Temperature:</span>
+                            <span className="text-sm text-muted-foreground">{t("monitor.temperature")}:</span>
                             <span className="text-sm font-medium">{gpu.temperature.toFixed(0)}°C</span>
                           </div>
                         )}
                         {gpu.power_draw > 0 && (
                           <div className="flex items-center gap-2">
                             <Battery className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">Power:</span>
+                            <span className="text-sm text-muted-foreground">{t("monitor.power")}:</span>
                             <span className="text-sm font-medium">{gpu.power_draw.toFixed(1)}W</span>
                           </div>
                         )}
@@ -369,8 +371,8 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Server className="h-12 w-12 mb-4 opacity-20" />
-              <p className="text-sm">No GPU detected</p>
-              <p className="text-xs mt-1">Connect a GPU to see detailed metrics</p>
+              <p className="text-sm">{t("monitor.noGpu")}</p>
+              <p className="text-xs mt-1">{t("monitor.noGpuDesc")}</p>
             </div>
           )}
         </TabsContent>

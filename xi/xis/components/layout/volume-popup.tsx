@@ -22,6 +22,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Volume2, VolumeX, Volume1 } from "lucide-react";
 import { useStatusStore } from "@/lib/stores/status-store";
+import { useI18n } from "@/lib/i18n";
 
 interface VolumePopupProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ interface VolumePopupProps {
 }
 
 export function VolumePopup({ isOpen, onClose, anchorRef }: VolumePopupProps) {
+  const { t } = useI18n();
   const [isClosing, setIsClosing] = useState(false);
   const [position, setPosition] = useState({ top: 0, right: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
@@ -96,13 +98,13 @@ export function VolumePopup({ isOpen, onClose, anchorRef }: VolumePopupProps) {
         <div className="control-popup__header">
           <div className="control-popup__title">
             {getVolumeIcon()}
-            <span className="control-popup__title-text">Volume</span>
+            <span className="control-popup__title-text">{t("volume.title")}</span>
           </div>
           <button
             className={`control-popup__toggle ${!muted ? 'control-popup__toggle--active' : ''}`}
             onClick={() => setMuted(!muted)}
           >
-            <span className="control-popup__toggle-label">{muted ? 'Muted' : 'On'}</span>
+            <span className="control-popup__toggle-label">{muted ? t("volume.muted") : t("volume.on")}</span>
           </button>
         </div>
 

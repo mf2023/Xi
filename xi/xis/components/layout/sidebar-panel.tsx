@@ -22,6 +22,7 @@
 import { ReactNode, useState } from "react";
 import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 interface SidebarPanelProps {
   title?: string;
@@ -46,6 +47,7 @@ export function SidebarPanel({
   toggleButtonPosition = "sidebar",
   renderToggleButton,
 }: SidebarPanelProps) {
+  const { t } = useI18n();
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const handleToggle = () => {
@@ -80,7 +82,7 @@ export function SidebarPanel({
         <button
           onClick={handleToggle}
           className="p-2 border-t border-border/50 hover:bg-muted/50 transition-colors flex items-center justify-center"
-          title="Collapse sidebar"
+          title={t("sidebarPanel.collapseSidebar")}
         >
           <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -90,7 +92,7 @@ export function SidebarPanel({
         <button
           onClick={handleToggle}
           className="p-2 hover:bg-muted/50 transition-colors flex items-center justify-center h-full"
-          title="Expand sidebar"
+          title={t("sidebarPanel.expandSidebar")}
         >
           <PanelLeft className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -124,6 +126,7 @@ export function SidebarToggleButton({
   onToggle: () => void;
   className?: string;
 }) {
+  const { t } = useI18n();
   return (
     <button
       onClick={onToggle}
@@ -131,7 +134,7 @@ export function SidebarToggleButton({
         "p-1.5 rounded-md hover:bg-muted/50 transition-colors flex items-center justify-center",
         className
       )}
-      title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      title={collapsed ? t("sidebarPanel.expandSidebar") : t("sidebarPanel.collapseSidebar")}
     >
       {collapsed ? (
         <PanelLeft className="h-4 w-4 text-muted-foreground" />

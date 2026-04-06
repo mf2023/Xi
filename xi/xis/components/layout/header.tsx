@@ -26,8 +26,9 @@ import { useSidebar } from "./sidebar-context";
 import { NotificationPopup } from "./notification-popup";
 import { NetworkPopup } from "./network-popup";
 import { VolumePopup } from "./volume-popup";
-import { useStatusStore } from "@/lib/stores/status-store";
+import { useStatusStore } from "@/lib/stores";
 import type { NetworkType } from "@/lib/api/status-ws";
+import { useI18n } from "@/lib/i18n";
 
 const getNetworkIcon = (type: NetworkType) => {
   switch (type) {
@@ -42,20 +43,8 @@ const getNetworkIcon = (type: NetworkType) => {
   }
 };
 
-const getNetworkTitle = (type: NetworkType): string => {
-  switch (type) {
-    case "ethernet":
-      return "Ethernet Connected";
-    case "wifi":
-      return "WiFi Connected";
-    case "mobile":
-      return "Mobile Data Connected";
-    default:
-      return "No Network Connection";
-  }
-};
-
 export function Header() {
+  const { t } = useI18n();
   const { collapsed, toggle } = useSidebar();
   const [time, setTime] = useState({ hours: "", minutes: "", dayPeriod: "" });
   const [date, setDate] = useState({ month: "", day: "", year: "" });
@@ -66,7 +55,20 @@ export function Header() {
   const networkButtonRef = useRef<HTMLButtonElement>(null);
   const volumeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const { networkType, networkEnabled, muted, connect, disconnect, isConnected } = useStatusStore();
+  const { networkType, networkEnabled, muted, connect } = useStatusStore();
+
+  const getNetworkTitle = (type: NetworkType): string => {
+    switch (type) {
+      case "ethernet":
+        return t("header.network.ethernetConnected");
+      case "wifi":
+        return t("header.network.wifiConnected");
+      case "mobile":
+        return t("header.network.mobileConnected");
+      default:
+        return t("header.network.noConnection");
+    }
+  };
 
   const updateTime = useCallback(() => {
     const now = new Date();
@@ -158,7 +160,7 @@ export function Header() {
             size="icon"
             className="h-8 w-8 bg-muted/50 hover:bg-muted"
             onClick={handleVolumeClick}
-            title={muted ? "Muted" : "Volume"}
+            title={muted ? t("header.volume.muted") : t("header.volume.volume")}
           >
             {muted ? (
               <VolumeX className="h-4 w-4" />
@@ -172,7 +174,7 @@ export function Header() {
             variant="secondary"
             className="flex h-8 items-center justify-center gap-2 px-3 bg-muted/50 hover:bg-muted"
             onClick={handleNotificationClick}
-            title="Notifications"
+            title={t("header.notifications")}
           >
             <span className="text-sm font-medium leading-none">
               {time.hours}:{time.minutes}

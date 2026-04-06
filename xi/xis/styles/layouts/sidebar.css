@@ -140,6 +140,11 @@
   color: white;
 }
 
+.sidebar__app-icon--purple {
+  background: linear-gradient(135deg, hsl(262 83% 58%), hsl(280 83% 58%));
+  color: white;
+}
+
 .sidebar__app-label {
   font-size: var(--text-xs);
   font-weight: 500;

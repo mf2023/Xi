@@ -28,8 +28,10 @@ import { useRunsStore } from "@/lib/stores";
 import { useApps } from "@/components/layout/apps-context";
 import { RunList } from "@/components/runs/run-list";
 import type { RunStatus } from "@/types/training";
+import { useI18n } from "@/lib/i18n";
 
 export default function RunsPage() {
+  const { t } = useI18n();
   const { runs, isLoading, isWsConnected, connectWebSocket, controlRun } = useRunsStore();
   const { openAppWithParams } = useApps();
   const searchParams = useSearchParams();
@@ -71,10 +73,10 @@ export default function RunsPage() {
     <ScrollArea className="h-full">
       <div className="page-container">
         <div className="page-header">
-          <h1 className="page-title">Runs</h1>
+          <h1 className="page-title">{t("runsPage.title")}</h1>
           <Button variant="secondary" onClick={() => openAppWithParams("run-orchestrator", { mode: "create" })}>
             <Play className="mr-2 h-4 w-4" />
-            New Run
+            {t("runsPage.newRun")}
           </Button>
         </div>
 
@@ -88,8 +90,8 @@ export default function RunsPage() {
           onTabChange={setActiveTab}
           onControl={controlRun}
           onView={handleViewRun}
-          emptyTitle="No runs yet"
-          title="All Runs"
+          emptyTitle={t("runsPage.noRuns")}
+          title={t("runsPage.allRuns")}
         />
       </div>
     </ScrollArea>

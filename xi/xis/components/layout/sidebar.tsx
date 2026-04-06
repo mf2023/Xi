@@ -28,45 +28,45 @@ import { useSidebar } from "./sidebar-context";
 import { useApps } from "./apps-context";
 import { Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 import {
   LayoutDashboard,
   Brain,
-  MessageSquare,
   Database,
   Cpu,
   Play,
   Folder,
   LayoutGrid,
+  Sparkles,
 } from "lucide-react";
-
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Training", href: "/training", icon: Brain },
-  { name: "Inference", href: "/inference", icon: MessageSquare },
-  { name: "Data", href: "/data", icon: Database },
-  { name: "Models", href: "/models", icon: Cpu },
-  { name: "Runs", href: "/runs", icon: Play },
-];
-
-const appIcons: Record<string, React.ElementType> = {
-  monitor: Monitor,
-  explorer: Folder,
-};
-
-const appColors: Record<string, string> = {
-  monitor: "blue",
-  explorer: "amber",
-};
 
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed } = useSidebar();
   const { apps, openApp, isAppRunning } = useApps();
+  const { t } = useI18n();
   const [showApps, setShowApps] = useState(false);
   const appsRef = useRef<HTMLDivElement>(null);
 
-  const visibleApps = apps.filter(app => !app.hidden);
+  const navigation = [
+    { name: t("sidebar.dashboard"), href: "/dashboard", icon: LayoutDashboard },
+    { name: t("sidebar.training"), href: "/training", icon: Brain },
+  ];
+
+  const appIcons: Record<string, React.ElementType> = {
+    monitor: Monitor,
+    explorer: Folder,
+    inference: Sparkles,
+  };
+
+  const appColors: Record<string, string> = {
+    monitor: "blue",
+    explorer: "amber",
+    inference: "purple",
+  };
+
+  const visibleApps = apps.filter(app => !app.hidden && app.id !== "inference");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -119,6 +119,60 @@ export function Sidebar() {
           );
         })}
 
+        {/* Inference Tab - Opens Inference App */}
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => openApp("inference")}
+              className={cn(
+                "sidebar__item",
+                collapsed && "sidebar__item--collapsed"
+              )}
+            >
+              <Sparkles className="h-5 w-5 flex-shrink-0" />
+              {!collapsed && <span>{t("sidebar.inference")}</span>}
+            </button>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right" className="font-medium">
+              {t("sidebar.inference")}
+            </TooltipContent>
+          )}
+        </Tooltip>
+
+        {/* Remaining Navigation Items */}
+        {[
+          { name: t("sidebar.data"), href: "/data", icon: Database },
+          { name: t("sidebar.models"), href: "/models", icon: Cpu },
+          { name: t("sidebar.runs"), href: "/runs", icon: Play },
+        ].map((item) => {
+          const isActive = pathname.startsWith(item.href);
+          const Icon = item.icon;
+
+          return (
+            <Tooltip key={item.name} delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "sidebar__item",
+                    isActive && "sidebar__item--active",
+                    collapsed && "sidebar__item--collapsed"
+                  )}
+                >
+                  <Icon className="h-5 w-5 flex-shrink-0" />
+                  {!collapsed && <span>{item.name}</span>}
+                </Link>
+              </TooltipTrigger>
+              {collapsed && (
+                <TooltipContent side="right" className="font-medium">
+                  {item.name}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          );
+        })}
+
         <div ref={appsRef} className="contents">
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -131,7 +185,7 @@ export function Sidebar() {
                 onClick={handleAppsClick}
               >
                 <LayoutGrid className="h-5 w-5 flex-shrink-0" />
-                {!collapsed && <span>Applications</span>}
+                {!collapsed && <span>{t("sidebar.applications")}</span>}
               </button>
             </TooltipTrigger>
             {collapsed && (

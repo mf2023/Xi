@@ -23,6 +23,7 @@ import { useApps } from "./apps-context";
 import { MonitorWindow } from "./monitor-window";
 import { FileExplorerWindow } from "./file-explorer-window";
 import { RunOrchestrator } from "./run-orchestrator";
+import { InferenceWindow } from "./inference-window";
 
 export function AppWindows() {
   const { apps } = useApps();
@@ -39,6 +40,8 @@ export function AppWindows() {
             return <FileExplorerWindow key={app.id} state={app.state} />;
           case "run-orchestrator":
             return <RunOrchestrator key={app.id} state={app.state} />;
+          case "inference":
+            return <InferenceWindow key={app.id} state={app.state} />;
           default:
             return null;
         }

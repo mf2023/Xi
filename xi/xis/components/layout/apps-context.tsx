@@ -66,6 +66,7 @@ export function AppsProvider({ children }: { children: ReactNode }) {
     { id: "monitor", name: "System Monitor", state: "closed", position: null, size: null },
     { id: "explorer", name: "File Explorer", state: "closed", position: null, size: null },
     { id: "run-orchestrator", name: "Run Orchestrator", state: "closed", position: null, size: null, hidden: true },
+    { id: "inference", name: "Inference", state: "closed", position: null, size: null },
   ]);
   const [focusedAppId, setFocusedAppId] = useState<string | null>(null);
 

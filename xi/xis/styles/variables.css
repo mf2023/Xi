@@ -39,8 +39,8 @@
   /* === Z-Index Layers === */
   --z-window-focused: 50;
   --z-window-normal: 40;
-  --z-popup: 50;
-  --z-context-menu: 9999;
+  --z-popup: 9999;
+  --z-context-menu: 10000;
   
   /* === Context Menu === */
   --context-menu-left: 0px;

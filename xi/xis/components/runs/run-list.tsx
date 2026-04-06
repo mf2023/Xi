@@ -39,6 +39,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { RunInfo, RunStatus } from "@/types/training";
+import { useI18n } from "@/lib/i18n";
 
 export interface RunListProps {
   runs: RunInfo[];
@@ -113,15 +114,21 @@ export function RunList({
   onControl,
   onView,
   onNewRun,
-  newRunLabel = "New Run",
+  newRunLabel,
   emptyIcon,
-  emptyTitle = "No runs found",
+  emptyTitle,
   filterType,
-  title = "All Runs",
+  title,
   showHeaderButton = false,
-  headerButtonLabel = "View All",
+  headerButtonLabel,
   onHeaderButtonClick,
 }: RunListProps) {
+  const { t } = useI18n();
+  
+  const _newRunLabel = newRunLabel || t("runs.newRun");
+  const _emptyTitle = emptyTitle || t("runs.noRuns");
+  const _title = title || t("runs.title");
+  const _headerButtonLabel = headerButtonLabel || t("runs.viewAll");
   const filteredRuns = runs.filter((r) => {
     if (filterType && r.command !== filterType) {
       return false;
@@ -141,10 +148,10 @@ export function RunList({
   };
 
   const tabs: { value: RunStatus | "all"; label: string; count: number }[] = [
-    { value: "all", label: "All", count: stats.total },
-    { value: "running", label: "Running", count: stats.running },
-    { value: "completed", label: "Completed", count: stats.completed },
-    { value: "failed", label: "Failed", count: stats.failed },
+    { value: "all", label: t("runs.tabs.all"), count: stats.total },
+    { value: "running", label: t("runs.tabs.running"), count: stats.running },
+    { value: "completed", label: t("runs.tabs.completed"), count: stats.completed },
+    { value: "failed", label: t("runs.tabs.failed"), count: stats.failed },
   ];
 
   const getStatusIcon = (status: string) => statusIcons[status] || <Clock className="h-4 w-4 text-gray-500" />;
@@ -161,13 +168,13 @@ export function RunList({
               <XCircle className="run-list__empty-icon run-list__empty-icon--error" />
               <p className="run-list__empty-text run-list__empty-text--error">{error}</p>
               <Button variant="secondary" onClick={() => window.location.reload()}>
-                Retry Connection
+                {t("common.retry")}
               </Button>
             </>
           ) : (
             <>
               <img src="/load.svg" alt="Connecting" className="run-list__empty-icon" />
-              <span className="run-list__empty-text">Connecting to service...</span>
+              <span className="run-list__empty-text">{t("runs.connecting")}</span>
             </>
           )}
         </div>
@@ -178,7 +185,7 @@ export function RunList({
       return (
         <div className="run-list__empty">
           <img src="/load.svg" alt="Loading" className="run-list__empty-icon" />
-          <span className="run-list__empty-text">Loading runs...</span>
+          <span className="run-list__empty-text">{t("runs.loading")}</span>
         </div>
       );
     }
@@ -187,11 +194,11 @@ export function RunList({
       return (
         <div className="run-list__empty">
           {emptyIcon || <Play className="run-list__empty-icon" />}
-          <p className="run-list__empty-text">{emptyTitle}</p>
+          <p className="run-list__empty-text">{_emptyTitle}</p>
           {onNewRun && (
             <Button variant="secondary" onClick={onNewRun}>
               <Play className="mr-2 h-4 w-4" />
-              {newRunLabel}
+              {_newRunLabel}
             </Button>
           )}
         </div>
@@ -201,13 +208,13 @@ export function RunList({
     return (
       <div className="run-list__content">
         <div className="run-list__header">
-          <div className="run-list__col run-list__col--status">Status</div>
-          <div className="run-list__col run-list__col--id">Run ID</div>
-          <div className="run-list__col run-list__col--name">Name</div>
-          <div className="run-list__col run-list__col--command">Command</div>
-          <div className="run-list__col run-list__col--phase">Phase</div>
-          <div className="run-list__col run-list__col--time">Created</div>
-          <div className="run-list__col run-list__col--actions">Actions</div>
+          <div className="run-list__col run-list__col--status">{t("runs.columns.status")}</div>
+          <div className="run-list__col run-list__col--id">{t("runs.columns.runId")}</div>
+          <div className="run-list__col run-list__col--name">{t("runs.columns.name")}</div>
+          <div className="run-list__col run-list__col--command">{t("runs.columns.command")}</div>
+          <div className="run-list__col run-list__col--phase">{t("runs.columns.phase")}</div>
+          <div className="run-list__col run-list__col--time">{t("runs.columns.created")}</div>
+          <div className="run-list__col run-list__col--actions">{t("runs.columns.actions")}</div>
         </div>
         <div className="run-list__body">
           {filteredRuns.map((run) => (
@@ -246,7 +253,7 @@ export function RunList({
                     <button
                       className="run-list__action run-list__action--warning"
                       onClick={() => onControl(run.run_id, "pause")}
-                      title="Pause"
+                      title={t("runs.actions.pause")}
                     >
                       <Pause className="h-3.5 w-3.5" />
                     </button>
@@ -255,7 +262,7 @@ export function RunList({
                     <button
                       className="run-list__action run-list__action--success"
                       onClick={() => onControl(run.run_id, "resume")}
-                      title="Resume"
+                      title={t("runs.actions.resume")}
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                     </button>
@@ -264,7 +271,7 @@ export function RunList({
                     <button
                       className="run-list__action run-list__action--danger"
                       onClick={() => onControl(run.run_id, "cancel")}
-                      title="Cancel"
+                      title={t("runs.actions.cancel")}
                     >
                       <Square className="h-3.5 w-3.5" />
                     </button>
@@ -272,7 +279,7 @@ export function RunList({
                   {run.status === "completed" && (
                     <button
                       className="run-list__action run-list__action--muted"
-                      title="Delete"
+                      title={t("runs.actions.delete")}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -281,7 +288,7 @@ export function RunList({
                     <button
                       className="run-list__action run-list__action--primary"
                       onClick={() => onView(run.run_id)}
-                      title="View Details"
+                      title={t("runs.actions.view")}
                     >
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
@@ -301,35 +308,35 @@ export function RunList({
         <div className="run-list__stats">
           <div className="run-list__stat">
             <div className="run-list__stat-header">
-              <span className="run-list__stat-label">Total</span>
+              <span className="run-list__stat-label">{t("runs.stats.total")}</span>
               <Play className="run-list__stat-icon run-list__stat-icon--primary" />
             </div>
             <span className="run-list__stat-value">{stats.total}</span>
           </div>
           <div className="run-list__stat">
             <div className="run-list__stat-header">
-              <span className="run-list__stat-label">Running</span>
+              <span className="run-list__stat-label">{t("runs.stats.running")}</span>
               <img src="/load.svg" alt="Running" className="run-list__stat-icon run-list__stat-icon--running" />
             </div>
             <span className="run-list__stat-value run-list__stat-value--running">{stats.running}</span>
           </div>
           <div className="run-list__stat">
             <div className="run-list__stat-header">
-              <span className="run-list__stat-label">Completed</span>
+              <span className="run-list__stat-label">{t("runs.stats.completed")}</span>
               <CheckCircle className="run-list__stat-icon run-list__stat-icon--completed" />
             </div>
             <span className="run-list__stat-value run-list__stat-value--completed">{stats.completed}</span>
           </div>
           <div className="run-list__stat">
             <div className="run-list__stat-header">
-              <span className="run-list__stat-label">Paused</span>
+              <span className="run-list__stat-label">{t("runs.stats.paused")}</span>
               <Pause className="run-list__stat-icon run-list__stat-icon--paused" />
             </div>
             <span className="run-list__stat-value run-list__stat-value--paused">{stats.paused}</span>
           </div>
           <div className="run-list__stat">
             <div className="run-list__stat-header">
-              <span className="run-list__stat-label">Failed</span>
+              <span className="run-list__stat-label">{t("runs.stats.failed")}</span>
               <XCircle className="run-list__stat-icon run-list__stat-icon--failed" />
             </div>
             <span className="run-list__stat-value run-list__stat-value--failed">{stats.failed}</span>
@@ -354,10 +361,10 @@ export function RunList({
 
       <CardHeader className="run-list__header-wrapper">
         <div className="run-list__header-title">
-          <CardTitle>{title}</CardTitle>
+          <CardTitle>{_title}</CardTitle>
           {showHeaderButton && onHeaderButtonClick && (
             <Button variant="secondary" size="sm" onClick={onHeaderButtonClick}>
-              {headerButtonLabel}
+              {_headerButtonLabel}
             </Button>
           )}
         </div>

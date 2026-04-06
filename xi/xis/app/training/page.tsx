@@ -28,8 +28,10 @@ import { useRunsStore } from "@/lib/stores";
 import { useApps } from "@/components/layout/apps-context";
 import { RunList } from "@/components/runs/run-list";
 import type { RunStatus } from "@/types/training";
+import { useI18n } from "@/lib/i18n";
 
 export default function TrainingPage() {
+  const { t } = useI18n();
   const { runs, isLoading, isWsConnected, error, connectWebSocket, controlRun } = useRunsStore();
   const { openAppWithParams } = useApps();
   const searchParams = useSearchParams();
@@ -63,10 +65,10 @@ export default function TrainingPage() {
     <ScrollArea className="h-full">
       <div className="page-container">
         <div className="page-header">
-          <h1 className="page-title">Training</h1>
+          <h1 className="page-title">{t("trainingPage.title")}</h1>
           <Button variant="secondary" onClick={() => openAppWithParams("run-orchestrator", { mode: "create", runType: "train" })}>
             <Plus className="mr-2 h-4 w-4" />
-            New Training
+            {t("trainingPage.newTraining")}
           </Button>
         </div>
 
@@ -82,8 +84,8 @@ export default function TrainingPage() {
           onControl={controlRun}
           onView={handleViewRun}
           emptyIcon={<Brain className="run-list__empty-icon" />}
-          emptyTitle="No training runs found"
-          title="Training Runs"
+          emptyTitle={t("trainingPage.noTrainingRuns")}
+          title={t("trainingPage.trainingRuns")}
           filterType="train"
         />
       </div>

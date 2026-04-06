@@ -20,7 +20,7 @@
 export interface FileItem {
   name: string;
   path: string;
-  type: "file" | "directory" | "unknown";
+  is_dir: boolean;
   size?: number;
   modified?: string;
   error?: string;
@@ -30,10 +30,18 @@ export interface DiskInfo {
   total: number;
   used: number;
   free: number;
-  is_windows: boolean;
+}
+
+export interface DriveInfo {
+  name: string;
+  path: string;
+  total: number;
+  used: number;
+  free: number;
 }
 
 export type ExplorerClientMessage =
+  | { type: "get_drives" }
   | { type: "browse"; path: string }
   | { type: "create_folder"; path: string }
   | { type: "create_file"; path: string; content: string }
@@ -43,7 +51,8 @@ export type ExplorerClientMessage =
   | { type: "move"; source: string; destination: string };
 
 export type ExplorerServerMessage =
-  | { type: "directory"; path: string; items: FileItem[]; disk?: DiskInfo }
+  | { type: "drives"; is_windows: boolean; drives: DriveInfo[] }
+  | { type: "directory"; path: string; items: FileItem[]; disk?: DiskInfo; is_windows?: boolean }
   | { type: "operation_result"; success: boolean; operation: string; path?: string; error?: string }
   | { type: "error"; message: string };
 
@@ -65,7 +74,6 @@ export class PiscesL1ExplorerWS {
     if (url) {
       this.url = url;
     } else {
-      // Connect directly to backend WebSocket server
       this.url = "ws://127.0.0.1:3140/ws/fs";
     }
   }
@@ -168,6 +176,10 @@ export class PiscesL1ExplorerWS {
     this.onDisconnectHandlers.delete(handler);
   }
 
+  getDrives(): void {
+    this.send({ type: "get_drives" });
+  }
+
   browse(path: string): void {
     this.send({ type: "browse", path });
   }
@@ -194,6 +206,31 @@ export class PiscesL1ExplorerWS {
 
   moveItem(source: string, destination: string): void {
     this.send({ type: "move", source, destination });
+  }
+
+  browseOnce(path: string): Promise<FileItem[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        reject(new Error("WebSocket not connected"));
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        this.off("directory", handler);
+        reject(new Error("Request timeout"));
+      }, 10000);
+
+      const handler = (msg: ExplorerServerMessage) => {
+        if (msg.type === "directory" && msg.path === path) {
+          clearTimeout(timeout);
+          this.off("directory", handler);
+          resolve(msg.items);
+        }
+      };
+
+      this.on("directory", handler);
+      this.browse(path);
+    });
   }
 
   get isConnected(): boolean {

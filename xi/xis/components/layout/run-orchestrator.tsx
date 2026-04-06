@@ -48,6 +48,7 @@ import { useApps } from "./apps-context";
 import { AppWindow } from "./app-window";
 import { useRunsStore } from "@/lib/stores";
 import type { RunTypeInfo, RunTypeParameter } from "@/lib/api/runs-ws";
+import { useI18n } from "@/lib/i18n";
 import type { RunInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { useSidebarCollapse } from "./sidebar-panel";
@@ -130,6 +131,7 @@ function convertToDynamicParameter(param: RunTypeParameter): DynamicParameter {
 }
 
 export function RunOrchestrator({ state }: RunOrchestratorProps) {
+  const { t } = useI18n();
   const {
     minimizeApp,
     closeApp,
@@ -341,7 +343,7 @@ export function RunOrchestrator({ state }: RunOrchestratorProps) {
       } else {
         setCreateResult({ 
           success: false, 
-          message: result.error || "Failed to create run" 
+          message: result.error || t("runOrchestrator.failedToCreate") 
         });
         setIsCreating(false);
         creatingRef.current = false;
@@ -408,19 +410,19 @@ export function RunOrchestrator({ state }: RunOrchestratorProps) {
             <>
               <div className="p-3 border-b border-border/50">
                 <h3 className="font-medium text-sm">
-                  {mode === "create" ? "Run Types" : "Runs"}
+                  {mode === "create" ? t("runOrchestrator.runTypes") : t("runOrchestrator.runs")}
                 </h3>
               </div>
 
               <div className="flex-1 overflow-y-auto p-2 space-y-1">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <img src="/load.svg" alt="Loading" className="h-6 w-6" />
+                    <img src="/load.svg" alt={t("runOrchestrator.loading")} className="h-6 w-6" />
                   </div>
                 ) : mode === "create" ? (
                   runTypes.length === 0 ? (
                     <div className="text-center text-muted-foreground text-sm py-8">
-                      No types available
+                      {t("runOrchestrator.noTypesAvailable")}
                     </div>
                   ) : (
                     runTypes.map((runType) => (
@@ -453,7 +455,7 @@ export function RunOrchestrator({ state }: RunOrchestratorProps) {
                   )
                 ) : filteredRuns.length === 0 ? (
                   <div className="text-center text-muted-foreground text-sm py-8">
-                    No runs available
+                    {t("runOrchestrator.noRunsAvailable")}
                   </div>
                 ) : (
                   filteredRuns.map((run) => (
@@ -545,7 +547,7 @@ export function RunOrchestrator({ state }: RunOrchestratorProps) {
                           id="run-name"
                           value={runName}
                           onChange={(e) => setRunName(e.target.value)}
-                          placeholder="Enter a name for this run"
+                          placeholder={t("runOrchestrator.enterRunName")}
                         />
                       </div>
                     )}
@@ -617,7 +619,7 @@ export function RunOrchestrator({ state }: RunOrchestratorProps) {
                     ) : (
                       <Play className="h-4 w-4 mr-2" />
                     )}
-                    {isCreating ? "Creating..." : "Create Run"}
+                    {isCreating ? t("runOrchestrator.creating") : t("runOrchestrator.createRun")}
                   </Button>
                 </div>
               </div>
@@ -701,7 +703,7 @@ export function RunOrchestrator({ state }: RunOrchestratorProps) {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Type:</span>
-                    <p className="font-medium capitalize">{selectedRun.command || "Unknown"}</p>
+                    <p className="font-medium capitalize">{selectedRun.command || t("runOrchestrator.unknown")}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">PID:</span>

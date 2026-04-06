@@ -23,6 +23,7 @@ import { useRef, useState, useCallback, ReactNode, MouseEvent, useEffect } from 
 import { X, Minus, Plus, PanelLeft, PanelLeftClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppMenuBar, MenuGroup } from "./app-menu-bar";
+import { useI18n } from "@/lib/i18n";
 
 const HEADER_HEIGHT = 48;
 const MIN_WIDTH = 400;
@@ -72,6 +73,7 @@ export function AppWindow({
   onSidebarToggle,
   menuGroups,
 }: AppWindowProps) {
+  const { t } = useI18n();
   const windowRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: -9999, y: -9999 });
   const [size, setSize] = useState(savedSize || defaultSize);
@@ -332,21 +334,21 @@ export function AppWindow({
           <button
             className="window-control window-control--close"
             onClick={onClose}
-            title="Close"
+            title={t("common.close")}
           >
             <X className="window-control__icon" />
           </button>
           <button
             className="window-control window-control--minimize"
             onClick={onMinimize}
-            title="Minimize"
+            title={t("appWindow.minimize")}
           >
             <Minus className="window-control__icon" />
           </button>
           <button
             className="window-control window-control--maximize"
             onClick={handleToggleMaximize}
-            title={isMaximized ? "Restore" : "Maximize"}
+            title={isMaximized ? t("appWindow.restore") : t("appWindow.maximize")}
           >
             <Plus className="window-control__icon" />
           </button>
@@ -357,7 +359,7 @@ export function AppWindow({
             <button
               onClick={onSidebarToggle}
               className="p-1.5 rounded-md hover:bg-muted/50 transition-colors flex items-center justify-center"
-              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? t("sidebarPanel.expandSidebar") : t("sidebarPanel.collapseSidebar")}
             >
               {sidebarCollapsed ? (
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />

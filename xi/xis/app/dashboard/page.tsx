@@ -34,13 +34,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRunsStore } from "@/lib/stores";
 import { useMonitorStore } from "@/lib/stores/monitor-store";
+import { useApps } from "@/components/layout/apps-context";
 import { useEffect } from "react";
 import { RunList } from "@/components/runs/run-list";
+import { useI18n } from "@/lib/i18n";
 
 export default function DashboardPage() {
   const { runs, isLoading: runsLoading, connectWebSocket: connectRunsWs, controlRun } = useRunsStore();
   const { stats, connectWebSocket: connectMonitorWs } = useMonitorStore();
+  const { openApp } = useApps();
   const router = useRouter();
+  const { t } = useI18n();
 
   useEffect(() => {
     connectRunsWs();
@@ -51,6 +55,10 @@ export default function DashboardPage() {
 
   const handleViewRun = (runId: string) => {
     router.push(`/runs?view=${runId}`);
+  };
+
+  const handleInferenceClick = () => {
+    openApp("inference");
   };
 
   return (
@@ -66,7 +74,7 @@ export default function DashboardPage() {
                       <Brain className="h-8 w-8 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl">Training</CardTitle>
+                      <CardTitle className="text-xl">{t("dashboard.training")}</CardTitle>
                     </div>
                   </div>
                   <Plus className="h-6 w-6 text-muted-foreground" />
@@ -76,44 +84,42 @@ export default function DashboardPage() {
                 <div className="page-stats">
                   <div className="page-stats__item">
                     <Play className="h-4 w-4" />
-                    <span>{runs.filter((r) => r.status === "running").length || 0} Active</span>
+                    <span>{runs.filter((r) => r.status === "running").length || 0} {t("dashboard.active")}</span>
                   </div>
                   <div className="page-stats__item">
-                    <span>{runs.length || 0} Total Runs</span>
+                    <span>{runs.length || 0} {t("dashboard.totalRuns")}</span>
                   </div>
                 </div>
               </CardContent>
             </Link>
           </Card>
 
-          <Card className="card--hover" asChild>
-            <Link href="/inference">
-              <CardHeader>
-                <div className="page-header">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-primary/10 p-3">
-                      <MessageSquare className="h-8 w-8 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">Inference</CardTitle>
-                    </div>
+          <Card className="card--hover cursor-pointer" onClick={handleInferenceClick}>
+            <CardHeader>
+              <div className="page-header">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-3">
+                    <MessageSquare className="h-8 w-8 text-primary" />
                   </div>
-                  <Zap className="h-6 w-6 text-muted-foreground" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="page-stats">
-                  <div className="page-stats__item">
-                    <Activity className="h-4 w-4" />
-                    <span>QPS: {((systemStats?.qps as number) || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="page-stats__item">
-                    <Cpu className="h-4 w-4" />
-                    <span>{(systemStats?.gpu_count as number) || 0} GPUs</span>
+                  <div>
+                    <CardTitle className="text-xl">{t("dashboard.inference")}</CardTitle>
                   </div>
                 </div>
-              </CardContent>
-            </Link>
+                <Zap className="h-6 w-6 text-muted-foreground" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="page-stats">
+                <div className="page-stats__item">
+                  <Activity className="h-4 w-4" />
+                  <span>{t("dashboard.qps")}: {((systemStats?.qps as number) || 0).toFixed(2)}</span>
+                </div>
+                <div className="page-stats__item">
+                  <Cpu className="h-4 w-4" />
+                  <span>{(systemStats?.gpu_count as number) || 0} {t("dashboard.gpus")}</span>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         </div>
 
@@ -125,8 +131,11 @@ export default function DashboardPage() {
           showTabs={false}
           onControl={controlRun}
           onView={handleViewRun}
-          emptyTitle="No runs yet"
-          title="Recent Runs"
+          emptyTitle={t("runs.noRuns")}
+          title={t("runs.recentRuns")}
+          showHeaderButton={true}
+          headerButtonLabel={t("runs.viewAll")}
+          onHeaderButtonClick={() => router.push("/runs")}
         />
       </div>
     </ScrollArea>
