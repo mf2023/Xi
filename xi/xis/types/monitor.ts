@@ -17,6 +17,31 @@
  * limitations under the License.
  */
 
+export interface GpuDetailedInfo {
+  index: number;
+  vendor: string;
+  name: string;
+  gpu_type: string;
+  vram_gb: number;
+  shared_memory_gb: number;
+  driver_version: string;
+  driver_date: string;
+  device_id: string;
+  vendor_id: string;
+  subsys_id: string;
+  revision: string;
+  video_processor: string;
+  current_resolution: string;
+  refresh_rate: number;
+  video_architecture: string;
+  status: string;
+  utilization: number;
+  memory_used_gb: number;
+  memory_total_gb: number;
+  temperature: number;
+  power_draw: number;
+}
+
 export interface SystemStats {
   cpu_percent: number;
   memory_percent: number;
@@ -30,9 +55,15 @@ export interface SystemStats {
   gpu_names: string[];
   gpu_temperatures: number[];
   gpu_power_draw: number[];
+  gpu_driver_versions: string[];
+  gpu_details: GpuDetailedInfo[];
   uptime_seconds: number;
   request_count: number;
   qps: number;
+  net_bytes_sent: number;
+  net_bytes_recv: number;
+  net_upload_speed: number;
+  net_download_speed: number;
 }
 
 export interface GPUStats {

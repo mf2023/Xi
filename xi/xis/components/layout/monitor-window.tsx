@@ -50,6 +50,7 @@ interface GpuInfo {
   memory_total_gb: number;
   temperature: number;
   power_draw: number;
+  driver_version: string;
 }
 
 function getGpuVendorColor(vendor: string): { bg: string; text: string; bar: string } {
@@ -98,7 +99,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
   const maximized = isAppMaximized("monitor");
   const focused = isAppFocused("monitor");
 
-  const { stats, isLoading, isWsConnected, connectWebSocket, disconnectWebSocket } = useMonitorStore();
+  const { stats, isWsConnected, connectWebSocket, disconnectWebSocket } = useMonitorStore();
 
   useEffect(() => {
     if (!isWsConnected) {
@@ -121,8 +122,25 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
   const gpuMemTotal = stats?.gpu_memory_total || [];
   const gpuTemps = stats?.gpu_temperatures || [];
   const gpuPower = stats?.gpu_power_draw || [];
+  const gpuDriverVersions = stats?.gpu_driver_versions || [];
   const qps = (stats?.qps || 0).toFixed(2);
   const uptime = stats?.uptime_seconds || 0;
+  const netBytesSent = stats?.net_bytes_sent || 0;
+  const netBytesRecv = stats?.net_bytes_recv || 0;
+  const netUploadSpeed = stats?.net_upload_speed || 0;
+  const netDownloadSpeed = stats?.net_download_speed || 0;
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  const formatSpeed = (bytesPerSec: number) => {
+    return formatBytes(bytesPerSec) + "/s";
+  };
 
   const gpus: GpuInfo[] = [];
   for (let i = 0; i < gpuCount; i++) {
@@ -134,6 +152,7 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
       memory_total_gb: gpuMemTotal[i] || 0,
       temperature: gpuTemps[i] || 0,
       power_draw: gpuPower[i] || 0,
+      driver_version: gpuDriverVersions[i] || "",
     });
   }
 
@@ -225,43 +244,114 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
             </div>
           </div>
 
-          {gpuCount > 0 && (
-            <div className="mt-4 rounded-lg border p-4">
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Server className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{t("monitor.gpuOverview")}</span>
+                <span className="font-medium">{t("monitor.gpuDetails")}</span>
                 <span className="text-sm text-muted-foreground">({gpuCount} {t("monitor.detected")})</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {gpus.map((gpu, idx) => {
-                  const colors = getGpuVendorColor(gpu.vendor);
-                  return (
-                    <div key={idx} className="p-3 rounded-md bg-muted/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={cn("p-1 rounded", colors.bg)}>
-                            <Server className={cn("h-3 w-3", colors.text)} />
+              {gpuCount > 0 ? (
+                <div className="space-y-2">
+                  {gpus.map((gpu, idx) => {
+                    const colors = getGpuVendorColor(gpu.vendor);
+                    const memPercent = gpu.memory_total_gb > 0 ? (gpu.memory_used_gb / gpu.memory_total_gb) * 100 : 0;
+                    return (
+                      <div key={idx} className="p-2 rounded-md bg-muted/50">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <div className={cn("p-1 rounded", colors.bg)}>
+                              <Server className={cn("h-3 w-3", colors.text)} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-medium truncate max-w-[120px]">{gpu.name}</span>
+                              <span className={cn("text-[10px]", colors.text)}>{getGpuVendorLabel(gpu.vendor)}</span>
+                            </div>
                           </div>
-                          <span className="text-xs font-medium truncate max-w-[100px]">{gpu.name}</span>
+                          <span className="text-sm font-semibold">{gpu.utilization.toFixed(0)}%</span>
                         </div>
-                        <span className="font-semibold">{gpu.utilization.toFixed(0)}%</span>
+                        <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <MemoryStick className="h-2.5 w-2.5" />
+                            <span>{gpu.memory_used_gb.toFixed(1)}/{gpu.memory_total_gb.toFixed(1)} GB</span>
+                          </div>
+                          {gpu.temperature > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Thermometer className="h-2.5 w-2.5" />
+                              <span>{gpu.temperature.toFixed(0)}°C</span>
+                            </div>
+                          )}
+                          {gpu.power_draw > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Battery className="h-2.5 w-2.5" />
+                              <span>{gpu.power_draw.toFixed(0)}W</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={cn("progress-bar", colors.bar)}
+                            style={{ '--progress-width': `${memPercent}%` } as React.CSSProperties}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={cn("progress-bar", colors.bar)}
-                          style={{ '--progress-width': `${gpu.utilization}%` } as React.CSSProperties}
-                        />
-                      </div>
-                      <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-                        <span>{gpu.memory_used_gb.toFixed(1)}/{gpu.memory_total_gb.toFixed(1)} GB</span>
-                        {gpu.temperature > 0 && <span>{gpu.temperature.toFixed(0)}°C</span>}
-                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-6 text-muted-foreground">
+                  <Server className="h-8 w-8 mb-2 opacity-30" />
+                  <p className="text-xs">{t("monitor.noGpu")}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Network className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{t("monitor.network")}</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 rounded bg-emerald-100 dark:bg-emerald-900/20">
+                      <svg className="h-3 w-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 19V5M5 12l7-7 7 7" />
+                      </svg>
                     </div>
-                  );
-                })}
+                    <span className="text-xs font-medium">{t("monitor.upload")}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-semibold">{formatSpeed(netUploadSpeed)}</span>
+                    <span className="text-xs text-muted-foreground ml-2">({formatBytes(netBytesSent)})</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 rounded bg-blue-100 dark:bg-blue-900/20">
+                      <svg className="h-3 w-3 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12l7 7 7-7" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium">{t("monitor.download")}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-semibold">{formatSpeed(netDownloadSpeed)}</span>
+                    <span className="text-xs text-muted-foreground ml-2">({formatBytes(netBytesRecv)})</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 rounded bg-sky-100 dark:bg-sky-900/20">
+                      <Zap className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                    </div>
+                    <span className="text-xs font-medium">{t("monitor.apiCalls")}</span>
+                  </div>
+                  <span className="text-sm font-semibold">{stats?.request_count || 0}</span>
+                </div>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="mt-4 grid grid-cols-3 gap-3">
             <div className="rounded-lg border p-3 text-center">
@@ -280,10 +370,10 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
             </div>
             <div className="rounded-lg border p-3 text-center">
               <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-                <Network className="h-3 w-3" />
-                <span className="text-xs">{t("monitor.gpus")}</span>
+                <MemoryStick className="h-3 w-3" />
+                <span className="text-xs">{t("monitor.totalVram")}</span>
               </div>
-              <p className="text-xl font-semibold">{gpuCount}</p>
+              <p className="text-xl font-semibold">{gpus.reduce((sum, g) => sum + g.memory_total_gb, 0).toFixed(1)} GB</p>
             </div>
           </div>
         </TabsContent>
@@ -297,71 +387,106 @@ export function MonitorWindow({ state }: MonitorWindowProps) {
         </TabsContent>
 
         <TabsContent value="gpu" className="p-6 mt-0">
-          {gpuCount > 0 ? (
-            <div className="space-y-3">
-              {gpus.map((gpu, idx) => {
+          {stats?.gpu_details && stats.gpu_details.length > 0 ? (
+            <div className="space-y-6">
+              {stats.gpu_details.map((gpu, idx) => {
                 const colors = getGpuVendorColor(gpu.vendor);
-                const memPercent = gpu.memory_total_gb > 0 ? (gpu.memory_used_gb / gpu.memory_total_gb) * 100 : 0;
                 
                 return (
-                  <div key={idx} className="rounded-lg border p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
+                  <div key={idx} className="rounded-lg border">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+                      <div className="flex items-center gap-3">
                         <div className={cn("p-2 rounded-md", colors.bg)}>
-                          <Server className={cn("h-4 w-4", colors.text)} />
+                          <Server className={cn("h-5 w-5", colors.text)} />
                         </div>
                         <div>
-                          <span className="font-medium">{gpu.name}</span>
-                          <span className={cn("ml-2 text-xs px-1.5 py-0.5 rounded", colors.bg, colors.text)}>
-                            {getGpuVendorLabel(gpu.vendor)}
-                          </span>
+                          <div className="font-semibold text-lg">{gpu.name}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={cn("text-xs px-2 py-0.5 rounded font-medium", colors.bg, colors.text)}>
+                              {gpu.vendor}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {gpu.vram_gb.toFixed(0)} GB VRAM | {gpu.gpu_type}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <span className="text-2xl font-bold">{gpu.utilization.toFixed(0)}%</span>
+                      <div className="text-right">
+                        <span className="text-3xl font-bold">{gpu.utilization.toFixed(0)}%</span>
+                        <div className="text-xs text-muted-foreground">{t("monitor.gpuUtilization")}</div>
+                      </div>
                     </div>
                     
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-muted-foreground">{t("monitor.gpuUtilization")}</span>
-                          <span>{gpu.utilization.toFixed(0)}%</span>
+                    {/* Hardware Info Section */}
+                    <div className="p-4 border-b">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-sm">{t("monitor.hardwareInfo")}</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.gpuProduct")}</span>
+                          <span>{gpu.name}</span>
                         </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn("progress-bar", colors.bar)}
-                            style={{ '--progress-width': `${gpu.utilization}%` } as React.CSSProperties}
-                          />
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.gpuType")}</span>
+                          <span>{gpu.gpu_type}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.vendorId")}</span>
+                          <span className="font-mono">{gpu.vendor_id || "-"}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.deviceId")}</span>
+                          <span className="font-mono">{gpu.device_id || "-"}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.subsysId")}</span>
+                          <span className="font-mono">{gpu.subsys_id || "-"}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.revision")}</span>
+                          <span className="font-mono">{gpu.revision || "-"}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.videoProcessor")}</span>
+                          <span>{gpu.video_processor || gpu.name}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.videoArchitecture")}</span>
+                          <span>{gpu.video_architecture || "-"}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.currentResolution")}</span>
+                          <span>{gpu.current_resolution || "-"}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.refreshRate")}</span>
+                          <span>{gpu.refresh_rate > 0 ? `${gpu.refresh_rate} Hz` : "-"}</span>
                         </div>
                       </div>
-                      
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-muted-foreground">{t("monitor.gpuMemoryUsage")}</span>
-                          <span>{gpu.memory_used_gb.toFixed(1)} / {gpu.memory_total_gb.toFixed(1)} GB ({memPercent.toFixed(0)}%)</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn("progress-bar", colors.bar)}
-                            style={{ '--progress-width': `${memPercent}%` } as React.CSSProperties}
-                          />
-                        </div>
+                    </div>
+                    
+                    {/* Software Info Section */}
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-sm">{t("monitor.softwareInfo")}</h4>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 pt-2">
-                        {gpu.temperature > 0 && (
-                          <div className="flex items-center gap-2">
-                            <Thermometer className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">{t("monitor.temperature")}:</span>
-                            <span className="text-sm font-medium">{gpu.temperature.toFixed(0)}°C</span>
-                          </div>
-                        )}
-                        {gpu.power_draw > 0 && (
-                          <div className="flex items-center gap-2">
-                            <Battery className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">{t("monitor.power")}:</span>
-                            <span className="text-sm font-medium">{gpu.power_draw.toFixed(1)}W</span>
-                          </div>
-                        )}
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.driverVersion")}</span>
+                          <span className="font-mono">{gpu.driver_version || "-"}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.driverDate")}</span>
+                          <span>{gpu.driver_date || "-"}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-dashed border-muted">
+                          <span className="text-muted-foreground">{t("monitor.status")}</span>
+                          <span className={cn(
+                            gpu.status === "OK" ? "text-emerald-600 dark:text-emerald-400" : ""
+                          )}>{gpu.status || "-"}</span>
+                        </div>
                       </div>
                     </div>
                   </div>

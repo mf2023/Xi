@@ -27,7 +27,7 @@ Type definitions for Xi Studio Backend Server.
 from .base import XiCommand, XiRunStatus, XiGpuVendor
 from .request import XiRequest, XiControlRequest
 from .response import XiResponse, XiControlResponse
-from .system import XiSystemStats, XiGpuInfo, XiLogEntry
+from .system import XiSystemStats, XiGpuInfo, XiGpuDetailedInfo, XiLogEntry
 from .run import XiRunInfo
 
 __all__ = [
@@ -35,6 +35,7 @@ __all__ = [
     "XiRunStatus",
     "XiGpuVendor",
     "XiGpuInfo",
+    "XiGpuDetailedInfo",
     "XiRequest",
     "XiResponse",
     "XiRunInfo",

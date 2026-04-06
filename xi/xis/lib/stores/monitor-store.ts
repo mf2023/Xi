@@ -45,9 +45,15 @@ const initialStats: SystemStats = {
   gpu_names: [],
   gpu_temperatures: [],
   gpu_power_draw: [],
+  gpu_driver_versions: [],
+  gpu_details: [],
   uptime_seconds: 0,
   request_count: 0,
   qps: 0,
+  net_bytes_sent: 0,
+  net_bytes_recv: 0,
+  net_upload_speed: 0,
+  net_download_speed: 0,
 };
 
 export const useMonitorStore = create<MonitorState>((set, get) => ({

@@ -45,6 +45,34 @@ class XiGpuInfo:
 
 
 @dataclass
+class XiGpuDetailedInfo:
+    """Detailed GPU information for display."""
+    index: int = 0
+    vendor: str = ""
+    name: str = ""
+    gpu_type: str = ""  # 集成/独立
+    vram_gb: float = 0.0
+    shared_memory_gb: float = 0.0
+    driver_version: str = ""
+    driver_date: str = ""
+    device_id: str = ""
+    vendor_id: str = ""
+    subsys_id: str = ""
+    revision: str = ""
+    video_processor: str = ""
+    current_resolution: str = ""
+    refresh_rate: int = 0
+    video_architecture: str = ""
+    status: str = ""
+    # Runtime stats
+    utilization: float = 0.0
+    memory_used_gb: float = 0.0
+    memory_total_gb: float = 0.0
+    temperature: float = 0.0
+    power_draw: float = 0.0
+
+
+@dataclass
 class XiSystemStats:
     cpu_percent: float = 0.0
     memory_percent: float = 0.0
@@ -58,9 +86,16 @@ class XiSystemStats:
     gpu_names: List[str] = field(default_factory=list)
     gpu_temperatures: List[float] = field(default_factory=list)
     gpu_power_draw: List[float] = field(default_factory=list)
+    gpu_driver_versions: List[str] = field(default_factory=list)
+    # Detailed GPU info for GPU tab
+    gpu_details: List[XiGpuDetailedInfo] = field(default_factory=list)
     uptime_seconds: float = 0.0
     request_count: int = 0
     qps: float = 0.0
+    net_bytes_sent: int = 0
+    net_bytes_recv: int = 0
+    net_upload_speed: float = 0.0
+    net_download_speed: float = 0.0
 
 
 @dataclass
