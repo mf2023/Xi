@@ -39,6 +39,9 @@ from .explorer import XiExplorerWebSocket
 from .welcome import XiWelcomeWebSocket
 from .status import XiStatusWebSocket
 
+from ...xar import XARWebSocketHandler
+from pathlib import Path
+
 
 class XiTrainingWebSocket:
     """
@@ -753,3 +756,29 @@ def setup_websockets(
             logger.error(f"Status WebSocket error: {e}", event="xi.status_ws.error")
         finally:
             status_handler.disconnect(websocket)
+
+    # XAR (Xi Applicant Runtime) WebSocket endpoint
+    xar_packages_dir = Path(__file__).parent.parent.parent / "xar" / "packages"
+    xar_handler = XARWebSocketHandler(xar_packages_dir, executor)
+    
+    @app.websocket("/xar")
+    async def xar_websocket(websocket: WebSocket):
+        await xar_handler.connect(websocket)
+
+        try:
+            async for raw_message in websocket.iter_text():
+                try:
+                    data = json.loads(raw_message)
+                    await xar_handler.handle(websocket, data)
+                except json.JSONDecodeError:
+                    await websocket.send_json({
+                        "type": "xar.error",
+                        "error": "invalid_message",
+                        "message": "Invalid JSON message"
+                    })
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            logger.error(f"XAR WebSocket error: {e}", event="xi.xar_ws.error")
+        finally:
+            xar_handler.disconnect(websocket)

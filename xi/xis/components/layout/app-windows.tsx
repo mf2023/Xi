@@ -5,7 +5,7 @@
  * The Xi project belongs to the Dunimd Team.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * You may not use this file except in compliance with the License.
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -19,33 +19,13 @@
 
 "use client";
 
-import { useApps } from "./apps-context";
-import { MonitorWindow } from "./monitor-window";
-import { FileExplorerWindow } from "./file-explorer-window";
-import { RunOrchestrator } from "./run-orchestrator";
-import { InferenceWindow } from "./inference-window";
+import { XARProvider } from "@/components/xar/container/xar-context";
+import { XARAppWindows } from "@/components/xar/container/xar-context";
 
 export function AppWindows() {
-  const { apps } = useApps();
-
   return (
-    <>
-      {apps.map((app) => {
-        if (app.state === "closed") return null;
-        
-        switch (app.id) {
-          case "monitor":
-            return <MonitorWindow key={app.id} state={app.state} />;
-          case "explorer":
-            return <FileExplorerWindow key={app.id} state={app.state} />;
-          case "run-orchestrator":
-            return <RunOrchestrator key={app.id} state={app.state} />;
-          case "inference":
-            return <InferenceWindow key={app.id} state={app.state} />;
-          default:
-            return null;
-        }
-      })}
-    </>
+    <XARProvider>
+      <XARAppWindows />
+    </XARProvider>
   );
 }

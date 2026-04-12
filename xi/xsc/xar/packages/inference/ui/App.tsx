@@ -1,24 +1,3 @@
-/**
- * Copyright © 2026 Wenze Wei. All Rights Reserved.
- *
- * This file is part of Xi.
- * The Xi project belongs to the Dunimd Team.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * You may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-"use client";
-
 import { useState, useRef, useEffect } from "react";
 import {
   Send,
@@ -41,47 +20,50 @@ import {
   ThumbsDown,
   RotateCcw
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useApps } from "./apps-context";
-import { AppWindow } from "./app-window";
-import { useChatStore, useInferenceStore } from "@/lib/stores";
-import type { ChatMessage } from "@/types";
-import { cn } from "@/lib/utils";
-import { useSidebarCollapse } from "./sidebar-panel";
-import { useI18n } from "@/lib/i18n";
+import type { XARControls } from "../../../../xar/runtime/controls";
+import type { XARBridge } from "../../logic/api";
+import type { Message } from "../../logic/types";
+import { cn } from "../../../../../../xis/lib/utils";
 
-interface InferenceWindowProps {
-  state: "minimized" | "normal" | "maximized";
+interface XARControls {
+  Button: React.ComponentType<{
+    variant?: string;
+    size?: string;
+    className?: string;
+    children: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+  }>;
+  Input: React.ComponentType<{
+    className?: string;
+    placeholder?: string;
+    value?: string;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onKeyDown?: (e: React.KeyboardEvent) => void;
+  }>;
+  ScrollArea: React.ComponentType<{
+    className?: string;
+    children: React.ReactNode;
+  }>;
 }
 
-function MessageItem({ message, isStreaming }: { message: ChatMessage; isStreaming?: boolean }) {
-  const { t } = useI18n();
+interface AppProps {
+  appId: string;
+  controls: XARControls;
+  bridge: XARBridge;
+}
+
+interface MessageItemProps {
+  message: Message;
+  isStreaming?: boolean;
+  controls: XARControls;
+}
+
+function MessageItem({ message, isStreaming, controls }: MessageItemProps) {
   const isUser = message.role === "user";
   const [showActions, setShowActions] = useState(false);
 
-  const renderContent = () => {
-    if (typeof message.content === "string") {
-      return message.content;
-    }
-    return message.content.map((part, idx) => {
-      switch (part.type) {
-        case "text":
-          return <span key={idx}>{part.text}</span>;
-        case "image_url":
-          return (
-            <img
-              key={idx}
-              src={part.image_url?.url}
-              alt={t("inference.image")}
-              className="max-w-md rounded-lg mt-2"
-            />
-          );
-        default:
-          return null;
-      }
-    });
-  };
+  const Button = controls.Button;
 
   return (
     <div
@@ -107,7 +89,7 @@ function MessageItem({ message, isStreaming }: { message: ChatMessage; isStreami
         )}
       </div>
 
-      <div className="flex-1 min-w-0 max-w-[calc(100%-48px)]">
+      <div className="flex-1 min-w-0 max-w-[calc(100%-48px%)]">
         <div
           className={cn(
             "rounded-2xl px-4 py-3",
@@ -117,7 +99,7 @@ function MessageItem({ message, isStreaming }: { message: ChatMessage; isStreami
           )}
         >
           <p className="whitespace-pre-wrap leading-relaxed text-sm">
-            {renderContent()}
+            {message.content}
             {isStreaming && (
               <Loader2 className="inline-block h-4 w-4 animate-spin ml-2" />
             )}
@@ -145,8 +127,13 @@ function MessageItem({ message, isStreaming }: { message: ChatMessage; isStreami
   );
 }
 
-function ChatSidebar({ collapsed }: { collapsed: boolean }) {
-  const { t } = useI18n();
+interface ChatSidebarProps {
+  collapsed: boolean;
+  controls: XARControls;
+}
+
+function ChatSidebar({ collapsed, controls }: ChatSidebarProps) {
+  const Button = controls.Button;
   const recentChats = [
     "开发大模型训练平台：简化配置...",
     "蒸馏多模态大模型指南",
@@ -179,36 +166,36 @@ function ChatSidebar({ collapsed }: { collapsed: boolean }) {
           <div className="p-3">
             <Button variant="outline" className="w-full justify-start gap-2 h-9 text-sm">
               <MessageSquare className="h-4 w-4" />
-              {t("inference.newChat")}
+              <span>新建对话</span>
             </Button>
           </div>
 
           <div className="px-3 pb-2 space-y-1">
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
               <Box className="h-4 w-4 text-muted-foreground" />
-              <span>{t("inference.mySpace")}</span>
+              <span>我的空间</span>
             </button>
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
               <Sparkles className="h-4 w-4 text-muted-foreground" />
-              <span>{t("inference.agents")}</span>
+              <span>智能体</span>
             </button>
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
               <Wrench className="h-4 w-4 text-muted-foreground" />
-              <span>{t("inference.tools")}</span>
+              <span>工具</span>
             </button>
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
               <FolderPlus className="h-4 w-4 text-muted-foreground" />
-              <span>{t("inference.newGroup")}</span>
+              <span>新建分组</span>
             </button>
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
               <User className="h-4 w-4 text-muted-foreground" />
-              <span>{t("inference.mySpace")}</span>
+              <span>我的空间</span>
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto px-3">
             <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 mt-2">
-              {t("inference.recentChats")}
+              最近对话
             </div>
             <div className="space-y-0.5">
               {recentChats.map((chat, idx) => (
@@ -227,9 +214,13 @@ function ChatSidebar({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-function ModelSelector() {
+interface ModelSelectorProps {
+  controls: XARControls;
+}
+
+function ModelSelector({ controls }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { currentModel } = useChatStore();
+  const [currentModel, setCurrentModel] = useState("Qwen3-Max");
 
   return (
     <div className="relative">
@@ -237,25 +228,37 @@ function ModelSelector() {
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="text-sm font-medium">{currentModel || "Qwen3-Max"}</span>
+        <span className="text-sm font-medium">{currentModel}</span>
         <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 w-56 rounded-xl border bg-popover shadow-lg p-1 z-50">
-          <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
+          <button
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors"
+            onClick={() => { setCurrentModel("Qwen3-Max"); setIsOpen(false); }}
+          >
             <div className="font-medium">Qwen3-Max</div>
             <div className="text-xs text-muted-foreground">最强性能，全面领先</div>
           </button>
-          <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
+          <button
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors"
+            onClick={() => { setCurrentModel("Qwen3-72B"); setIsOpen(false); }}
+          >
             <div className="font-medium">Qwen3-72B</div>
             <div className="text-xs text-muted-foreground">高性能，适合复杂任务</div>
           </button>
-          <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
+          <button
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors"
+            onClick={() => { setCurrentModel("Qwen3-32B"); setIsOpen(false); }}
+          >
             <div className="font-medium">Qwen3-32B</div>
             <div className="text-xs text-muted-foreground">均衡性能与速度</div>
           </button>
-          <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors">
+          <button
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-sm transition-colors"
+            onClick={() => { setCurrentModel("Qwen3-7B"); setIsOpen(false); }}
+          >
             <div className="font-medium">Qwen3-7B</div>
             <div className="text-xs text-muted-foreground">快速响应，轻量级</div>
           </button>
@@ -265,7 +268,14 @@ function ModelSelector() {
   );
 }
 
-function ToolButton({ icon: Icon, label, active }: { icon: React.ElementType; label: string; active?: boolean }) {
+interface ToolButtonProps {
+  icon: React.ElementType;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}
+
+function ToolButton({ icon: Icon, label, active, onClick }: ToolButtonProps) {
   return (
     <button
       className={cn(
@@ -274,6 +284,7 @@ function ToolButton({ icon: Icon, label, active }: { icon: React.ElementType; la
           ? "bg-primary/10 text-primary"
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       )}
+      onClick={onClick}
     >
       <Icon className="h-3.5 w-3.5" />
       <span>{label}</span>
@@ -281,34 +292,17 @@ function ToolButton({ icon: Icon, label, active }: { icon: React.ElementType; la
   );
 }
 
-export function InferenceWindow({ state }: InferenceWindowProps) {
-  const { t } = useI18n();
-  const {
-    minimizeApp,
-    closeApp,
-    maximizeApp,
-    restoreApp,
-    isAppMaximized,
-    getAppPosition,
-    updateAppPosition,
-    getAppSize,
-    updateAppSize,
-    focusApp,
-    isAppFocused,
-  } = useApps();
-
-  const savedPosition = getAppPosition("inference");
-  const savedSize = getAppSize("inference");
-  const maximized = isAppMaximized("inference");
-  const focused = isAppFocused("inference");
-
+export function App({ appId, controls, bridge }: AppProps) {
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { messages, isLoading, sendMessageStream } = useChatStore();
-  const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebarCollapse(false);
+
+  const ScrollArea = controls.ScrollArea;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -321,16 +315,63 @@ export function InferenceWindow({ state }: InferenceWindowProps) {
     }
   }, [input]);
 
+  useEffect(() => {
+    const unsubscribeMessage = bridge.onAppEvent("inference.message", (data) => {
+      const msg = data as Message;
+      setMessages((prev) => [...prev, msg]);
+      setIsLoading(false);
+    });
+
+    const unsubscribeStream = bridge.onAppEvent("inference.stream", (data) => {
+      const chunk = data as { delta: string };
+      setMessages((prev) => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage && lastMessage.role === "assistant") {
+          return [
+            ...prev.slice(0, -1),
+            { ...lastMessage, content: lastMessage.content + chunk.delta }
+          ];
+        }
+        return prev;
+      });
+    });
+
+    const unsubscribeError = bridge.onAppEvent("inference.error", (data) => {
+      console.error("Inference error:", data);
+      setIsLoading(false);
+    });
+
+    return () => {
+      unsubscribeMessage();
+      unsubscribeStream();
+      unsubscribeError();
+    };
+  }, [bridge]);
+
   const handleSend = async () => {
     if (!input.trim() && attachments.length === 0) return;
 
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: input,
+      timestamp: Date.now(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setAttachments([]);
+    setIsLoading(true);
+
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
 
-    await sendMessageStream(input);
+    bridge.send("inference.send", {
+      content: input,
+      appId,
+      timestamp: Date.now(),
+    });
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -338,45 +379,114 @@ export function InferenceWindow({ state }: InferenceWindowProps) {
     setAttachments((prev) => [...prev, ...files]);
   };
 
-  const handleClose = () => {
-    closeApp("inference");
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  if (state === "minimized") {
-    return null;
-  }
-
   return (
-    <AppWindow
-      appId="inference"
-      defaultSize={{ width: 1100, height: 750 }}
-      onMinimize={() => minimizeApp("inference")}
-      onClose={handleClose}
-      savedPosition={savedPosition}
-      onPositionChange={(pos) => updateAppPosition("inference", pos)}
-      savedSize={savedSize}
-      onSizeChange={(size) => updateAppSize("inference", size)}
-      isMaximized={maximized}
-      onMaximize={() => maximizeApp("inference")}
-      onRestore={() => restoreApp("inference")}
-      isFocused={focused}
-      onFocus={() => focusApp("inference")}
-      sidebarCollapsed={sidebarCollapsed}
-      onSidebarToggle={toggleSidebar}
-    >
-      <div className="flex h-full">
-        <ChatSidebar collapsed={sidebarCollapsed} />
+    <div className="flex h-full">
+      <ChatSidebar collapsed={sidebarCollapsed} controls={controls} />
 
-        <div className="flex-1 flex flex-col min-w-0 bg-background">
-          <header className="flex items-center px-4 py-2">
-            <ModelSelector />
-          </header>
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
+        <header className="flex items-center px-4 py-2">
+          <ModelSelector controls={controls} />
+        </header>
 
-          {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center px-4">
-              <h1 className="text-2xl font-medium mb-8">👋 {t("inference.hello")}</h1>
+        {messages.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center px-4">
+            <h1 className="text-2xl font-medium mb-8">👋 你好，有什么可以帮你的？</h1>
 
-              <div className="w-full max-w-2xl">
+            <div className="w-full max-w-2xl">
+              <div className="relative rounded-2xl border bg-card shadow-sm">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="输入你的问题..."
+                  className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm resize-none min-h-[60px] max-h-[200px] p-4 pb-16"
+                  rows={2}
+                />
+
+                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                    <button
+                      className="flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                    <ToolButton icon={Sparkles} label="深度思考" />
+                    <ToolButton icon={Search} label="深度搜索" />
+                    <ToolButton icon={Code} label="代码" />
+                    <ToolButton icon={Image} label="AI生图" />
+                    <ToolButton icon={Languages} label="翻译" />
+                    <ToolButton icon={MoreHorizontal} label="更多" />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {attachments.length > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        {attachments.length} 个附件
+                      </span>
+                    )}
+                    <button
+                      className={cn(
+                        "flex items-center justify-center h-8 w-8 rounded-full transition-colors",
+                        input.trim() || attachments.length > 0
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                      onClick={handleSend}
+                      disabled={isLoading || (!input.trim() && attachments.length === 0)}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="max-w-2xl mx-auto px-4 py-6">
+                  {messages.map((message, idx) => (
+                    <MessageItem
+                      key={message.id || idx}
+                      message={message}
+                      isStreaming={
+                        isLoading &&
+                        idx === messages.length - 1 &&
+                        message.role === "assistant"
+                      }
+                      controls={controls}
+                    />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="border-t bg-background p-4">
+              <div className="max-w-2xl mx-auto">
                 <div className="relative rounded-2xl border bg-card shadow-sm">
                   <textarea
                     ref={textareaRef}
@@ -388,38 +498,31 @@ export function InferenceWindow({ state }: InferenceWindowProps) {
                         handleSend();
                       }
                     }}
-                    placeholder={t("inference.placeholder")}
+                    placeholder="输入你的问题..."
                     className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm resize-none min-h-[60px] max-h-[200px] p-4 pb-16"
                     rows={2}
                   />
 
                   <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        className="hidden"
-                        onChange={handleFileSelect}
-                      />
                       <button
                         className="flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <Plus className="h-4 w-4 text-muted-foreground" />
                       </button>
-                      <ToolButton icon={Sparkles} label={t("inference.deepThinking")} />
-                      <ToolButton icon={Search} label={t("inference.deepResearch")} />
-                      <ToolButton icon={Code} label={t("inference.code")} />
-                      <ToolButton icon={Image} label={t("inference.aiImage")} />
-                      <ToolButton icon={Languages} label={t("inference.translate")} />
-                      <ToolButton icon={MoreHorizontal} label={t("inference.more")} />
+                      <ToolButton icon={Sparkles} label="深度思考" />
+                      <ToolButton icon={Search} label="深度搜索" />
+                      <ToolButton icon={Code} label="代码" />
+                      <ToolButton icon={Image} label="AI生图" />
+                      <ToolButton icon={Languages} label="翻译" />
+                      <ToolButton icon={MoreHorizontal} label="更多" />
                     </div>
 
                     <div className="flex items-center gap-2">
                       {attachments.length > 0 && (
                         <span className="text-xs text-muted-foreground">
-                          {t("inference.attachments", { count: attachments.length })}
+                          {attachments.length} 个附件
                         </span>
                       )}
                       <button
@@ -443,92 +546,11 @@ export function InferenceWindow({ state }: InferenceWindowProps) {
                 </div>
               </div>
             </div>
-          ) : (
-            <>
-              <div className="flex-1 overflow-hidden">
-                <ScrollArea className="h-full">
-                  <div className="max-w-2xl mx-auto px-4 py-6">
-                    {messages.map((message, idx) => (
-                      <MessageItem
-                        key={idx}
-                        message={message}
-                        isStreaming={
-                          isLoading &&
-                          idx === messages.length - 1 &&
-                          message.role === "assistant"
-                        }
-                      />
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </ScrollArea>
-              </div>
-
-              <div className="border-t bg-background p-4">
-                <div className="max-w-2xl mx-auto">
-                  <div className="relative rounded-2xl border bg-card shadow-sm">
-                    <textarea
-                      ref={textareaRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSend();
-                        }
-                      }}
-                      placeholder={t("inference.placeholder")}
-                    className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm resize-none min-h-[60px] max-h-[200px] p-4 pb-16"
-                    rows={2}
-                  />
-
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <button
-                          className="flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted transition-colors"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <Plus className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                        <ToolButton icon={Sparkles} label={t("inference.deepThinking")} />
-                        <ToolButton icon={Search} label={t("inference.deepResearch")} />
-                        <ToolButton icon={Code} label={t("inference.code")} />
-                        <ToolButton icon={Image} label={t("inference.aiImage")} />
-                        <ToolButton icon={Languages} label={t("inference.translate")} />
-                        <ToolButton icon={MoreHorizontal} label={t("inference.more")} />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {attachments.length > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            {t("inference.attachments", { count: attachments.length })}
-                          </span>
-                        )}
-                        <button
-                          className={cn(
-                            "flex items-center justify-center h-8 w-8 rounded-full transition-colors",
-                            input.trim() || attachments.length > 0
-                              ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                              : "bg-muted text-muted-foreground"
-                          )}
-                          onClick={handleSend}
-                          disabled={isLoading || (!input.trim() && attachments.length === 0)}
-                        >
-                          {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+          </>
+        )}
       </div>
-    </AppWindow>
+    </div>
   );
 }
+
+export default App;
