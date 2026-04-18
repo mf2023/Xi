@@ -31,7 +31,7 @@ export class XARBridge {
   private eventHandlers: Map<string, Set<EventHandler>> = new Map();
   private isIntentionallyClosed = false;
 
-  constructor(url = "ws://localhost:3140/xar") {
+  constructor(url = "/xar") {
     this.url = url;
   }
 
@@ -45,9 +45,13 @@ export class XARBridge {
       this.isIntentionallyClosed = false;
 
       try {
-        this.ws = new WebSocket(this.url);
+        // Use direct WebSocket URL to avoid any proxy issues
+        const wsUrl = "ws://localhost:3140/xar";
+        console.log('Connecting to XAR WebSocket at:', wsUrl);
+        this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
+          console.log('XAR WebSocket connected');
           this.reconnectAttempts = 0;
           this.emit({ type: "connected" });
           resolve();
@@ -56,24 +60,29 @@ export class XARBridge {
         this.ws.onmessage = (event) => {
           try {
             const message: XARMessage = JSON.parse(event.data);
+            console.log('XAR WebSocket message:', message);
             this.handleMessage(message);
-          } catch {
+          } catch (e) {
+            console.error('Error parsing XAR WebSocket message:', e);
             this.emit({ type: "raw", payload: event.data });
           }
         };
 
         this.ws.onerror = (error) => {
+          console.error('XAR WebSocket error:', error);
           this.emit({ type: "error", payload: error });
           reject(error);
         };
 
-        this.ws.onclose = () => {
+        this.ws.onclose = (event) => {
+          console.log('XAR WebSocket closed:', event);
           this.emit({ type: "disconnected" });
           if (!this.isIntentionallyClosed) {
             this.scheduleReconnect();
           }
         };
       } catch (error) {
+        console.error('Error creating XAR WebSocket:', error);
         reject(error);
       }
     });

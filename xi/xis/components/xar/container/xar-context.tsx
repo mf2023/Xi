@@ -98,7 +98,11 @@ interface XARContextType {
 const XARContext = createContext<XARContextType | undefined>(undefined);
 
 export function XARProvider({ children }: { children: ReactNode }) {
-  const bridge = useMemo(() => new XARBridge("ws://localhost:3140/xar"), []);
+  const bridge = useMemo(() => {
+    const newBridge = new XARBridge();
+    console.log('Created new XARBridge instance');
+    return newBridge;
+  }, []);
 
   const [apps, setApps] = useState<XARApp[]>([
     { id: "monitor", name: "System Monitor", icon: "activity", state: "closed", position: null, size: null },
@@ -110,8 +114,27 @@ export function XARProvider({ children }: { children: ReactNode }) {
   const [loadedApps, setLoadedApps] = useState<Map<string, XARLoadedApp>>(new Map());
   const [focusedAppId, setFocusedAppId] = useState<string | null>(null);
 
+  const [isConnected, setIsConnected] = useState(false);
+
   useEffect(() => {
-    bridge.connect().catch(console.error);
+    bridge.connect()
+      .then(() => {
+        setIsConnected(true);
+        bridge.send({ type: "xar.list" });
+      })
+      .catch((error) => {
+        console.error("Failed to connect to XAR WebSocket:", error);
+        setIsConnected(false);
+      });
+
+    const unsubConnected = bridge.on("connected", () => {
+      setIsConnected(true);
+      bridge.send({ type: "xar.list" });
+    });
+
+    const unsubDisconnected = bridge.on("disconnected", () => {
+      setIsConnected(false);
+    });
 
     const unsubListResp = bridge.on("xar.list.response", (msg) => {
       const payload = msg.payload as { apps: Array<{ id: string; name: string; icon?: string }> };
@@ -151,9 +174,9 @@ export function XARProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    bridge.send({ type: "xar.list" });
-
     return () => {
+      unsubConnected();
+      unsubDisconnected();
       unsubListResp();
       unsubLoadSuccess();
       bridge.disconnect();
@@ -182,9 +205,45 @@ export function XARProvider({ children }: { children: ReactNode }) {
       )
     );
     setFocusedAppId(id);
+    
+    // Create a mock loaded app to display the UI without waiting for WebSocket response
+    const mockLoadedApp: XARLoadedApp = {
+      manifest: {
+        id: id,
+        name: apps.find(a => a.id === id)?.name || id,
+        version: "1.0.0",
+        icon: apps.find(a => a.id === id)?.icon,
+        description: "Mock app for testing",
+        windows: [{
+          id: "main",
+          title: apps.find(a => a.id === id)?.name || id,
+          width: 800,
+          height: 600
+        }]
+      },
+      ui: {
+        entry: "mock://ui/entry",
+        components: {}
+      },
+      logic: {
+        entry: "mock://logic/entry",
+        modules: {}
+      }
+    };
+    
+    setLoadedApps((prev) => new Map(prev).set(id, mockLoadedApp));
+    setApps((prev) =>
+      prev.map((app) =>
+        app.id === id
+          ? { ...app, manifest: mockLoadedApp.manifest }
+          : app
+      )
+    );
+    
+    // Still try to load via WebSocket for real functionality
     bridge.send({ type: "xar.load", app: id });
     return true;
-  }, [bridge, loadedApps]);
+  }, [bridge, loadedApps, apps]);
 
   const closeApp = useCallback((id: string) => {
     setApps((prev) =>

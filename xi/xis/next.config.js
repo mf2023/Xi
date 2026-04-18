@@ -41,6 +41,14 @@ const nextConfig = {
         source: "/healthz",
         destination: "http://127.0.0.1:3140/healthz",
       },
+      {
+        source: "/xar",
+        destination: "http://127.0.0.1:3140/xar",
+      },
+      {
+        source: "/ws/:path*",
+        destination: "http://127.0.0.1:3140/ws/:path*",
+      },
     ];
   },
 };

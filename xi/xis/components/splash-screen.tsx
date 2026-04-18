@@ -48,6 +48,8 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     } catch (e) {
       if (!isMountedRef.current) return;
       console.error("Failed to check first launch:", e);
+      // Continue anyway if API call fails
+      onComplete();
     }
   }, [onComplete]);
 

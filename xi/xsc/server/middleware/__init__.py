@@ -51,7 +51,7 @@ def setup_middleware(app: FastAPI, session_manager: XiSessionManager) -> None:
         }
         
         # Allow WebSocket connections
-        if request.url.path.startswith("/ws/"):
+        if request.url.path.startswith("/ws/") or request.url.path == "/xar":
             return await call_next(request)
         
         if request.url.path in public_paths or request.url.path.startswith("/docs") or request.url.path.startswith("/redoc"):
