@@ -36,18 +36,14 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
   const checkFirstLaunch = useCallback(async () => {
     try {
-      const result = await apiClient.checkFirstLaunch();
-      
+      // 暂时跳过API调用，直接进入应用
       if (!isMountedRef.current) return;
-      
-      if (result.is_first_launch) {
-        setAppState("welcome");
-      } else {
-        onComplete();
-      }
+      onComplete();
     } catch (e) {
       if (!isMountedRef.current) return;
       console.error("Failed to check first launch:", e);
+      // 即使出错也进入应用
+      onComplete();
     }
   }, [onComplete]);
 
