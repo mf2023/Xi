@@ -98,7 +98,7 @@ interface XARContextType {
 const XARContext = createContext<XARContextType | undefined>(undefined);
 
 export function XARProvider({ children }: { children: ReactNode }) {
-  const bridge = useMemo(() => new XARBridge("ws://localhost:3140/xar"), []);
+  const bridge = useMemo(() => new XARBridge("ws://127.0.0.1:3140/xar"), []);
 
   const [apps, setApps] = useState<XARApp[]>([
     { id: "monitor", name: "System Monitor", icon: "activity", state: "closed", position: null, size: null },
@@ -111,7 +111,10 @@ export function XARProvider({ children }: { children: ReactNode }) {
   const [focusedAppId, setFocusedAppId] = useState<string | null>(null);
 
   useEffect(() => {
-    bridge.connect().catch(console.error);
+    // 连接WebSocket，但即使失败也不影响应用运行
+    bridge.connect().catch((error) => {
+      console.warn("WebSocket连接失败，应用将使用默认应用列表:", error);
+    });
 
     const unsubListResp = bridge.on("xar.list.response", (msg) => {
       const payload = msg.payload as { apps: Array<{ id: string; name: string; icon?: string }> };
@@ -151,7 +154,12 @@ export function XARProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    bridge.send({ type: "xar.list" });
+    // 发送应用列表请求，但即使失败也不影响应用运行
+    try {
+      bridge.send({ type: "xar.list" });
+    } catch (error) {
+      console.warn("发送应用列表请求失败:", error);
+    }
 
     return () => {
       unsubListResp();
@@ -182,7 +190,14 @@ export function XARProvider({ children }: { children: ReactNode }) {
       )
     );
     setFocusedAppId(id);
-    bridge.send({ type: "xar.load", app: id });
+    
+    // 发送应用加载请求，但即使失败也不影响应用运行
+    try {
+      bridge.send({ type: "xar.load", app: id });
+    } catch (error) {
+      console.warn("发送应用加载请求失败，将使用默认UI:", error);
+    }
+    
     return true;
   }, [bridge, loadedApps]);
 

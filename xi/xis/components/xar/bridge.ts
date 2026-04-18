@@ -31,7 +31,7 @@ export class XARBridge {
   private eventHandlers: Map<string, Set<EventHandler>> = new Map();
   private isIntentionallyClosed = false;
 
-  constructor(url = "ws://localhost:3140/xar") {
+  constructor(url = "ws://127.0.0.1:3140/xar") {
     this.url = url;
   }
 
