@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebar } from "./sidebar-context";
 import { useApps } from "./apps-context";
+import { useXAR } from "@/components/xar/container/xar-context";
 import { Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -45,6 +46,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { collapsed } = useSidebar();
   const { apps, openApp, isAppRunning } = useApps();
+  const { loadApp: loadXARApp, isAppRunning: isXARAppRunning } = useXAR();
   const { t } = useI18n();
   const [showApps, setShowApps] = useState(false);
   const appsRef = useRef<HTMLDivElement>(null);
@@ -214,14 +216,14 @@ export function Sidebar() {
                       key={app.id}
                       onClick={() => {
                         setShowApps(false);
-                        openApp(app.id);
+                        loadXARApp(app.id);
                       }}
                       className="sidebar__app-item relative"
                     >
                       <div className={`sidebar__app-icon sidebar__app-icon--${color}`}>
                         <Icon className="h-6 w-6 text-white" />
                       </div>
-                      {isRunning && (
+                      {isXARAppRunning(app.id) && (
                         <span className="sidebar__app-indicator" />
                       )}
                       <span className="sidebar__app-label">{app.name}</span>

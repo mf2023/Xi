@@ -19,13 +19,10 @@
 
 "use client";
 
-import { XARProvider } from "@/components/xar/container/xar-context";
 import { XARAppWindows } from "@/components/xar/container/xar-context";
 
 export function AppWindows() {
   return (
-    <XARProvider>
-      <XARAppWindows />
-    </XARProvider>
+    <XARAppWindows />
   );
 }

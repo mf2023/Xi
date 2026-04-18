@@ -22,16 +22,19 @@
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { AppWindows } from "./app-windows";
+import { XARProvider } from "@/components/xar/container/xar-context";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <Header />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-auto p-6 relative">{children}</main>
-        <AppWindows />
+    <XARProvider>
+      <div className="flex h-screen flex-col overflow-hidden bg-background">
+        <Header />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar />
+          <main className="flex-1 overflow-auto p-6 relative">{children}</main>
+          <AppWindows />
+        </div>
       </div>
-    </div>
+    </XARProvider>
   );
 }
